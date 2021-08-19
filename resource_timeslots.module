@@ -1,0 +1,531 @@
+<?php
+/**
+ * @file
+ * Hooks and functions for the Resource Timeslots module.
+ */
+
+/**
+ * Implements hook_field_info().
+ */
+function resource_timeslots_field_info() {
+  return array(
+    'resource_timeslot' => array(
+      'label' => t('Resource timeslot'),
+      'description' => t('This field stores start and end datetime and a resource id.'),
+      'settings' => array(),
+      'instance_settings' => array(
+        'resource_node_type' => NULL,
+      ),
+      'default_widget' => 'resource_timeslot',
+      'default_formatter' => 'resource_timeslot_text',
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_instance_settings_form().
+ */
+function resource_timeslots_field_instance_settings_form($field, $instance) {
+  $settings = $instance['settings'];
+  $current_type = arg(4);
+  $node_types = node_type_get_names();
+  unset($node_types[$current_type]);
+  $has_data = field_has_data($field);
+
+  $form['resource_node_type'] = array(
+    '#type' => 'select',
+    '#title' => t('Resource content type'),
+    '#default_value' => isset($settings['resource_node_type']) ? $settings['resource_node_type'] : NULL,
+    '#options' => $node_types,
+    '#required' => TRUE,
+    '#weight' => -1,
+    '#disabled' => $has_data,
+  );
+  if ($has_data) {
+    $form['resource_node_type']['#description'] = t('This field aready has data, changing the node type is not possible anymore.');
+  }
+
+  return $form;
+}
+
+/**
+ * Implements hook_field_is_empty().
+ */
+function resource_timeslots_field_is_empty($item, $field) {
+  if (empty($item['start']) || empty($item['end']) || empty($item['resource_id'])) {
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+/**
+ * Implements hook_field_widget_info().
+ */
+function resource_timeslots_field_widget_info() {
+  return array(
+    'resource_timeslot_fc' => array(
+      'label' => t('Timeslot Fullcalendar'),
+      'field types' => array('resource_timeslot'),
+      'settings' => array(
+        'min_slot_size' => '01:00',
+        'min_visible_hour' => 0,
+        'max_visible_hour' => 24,
+        'calendar_height' => NULL,
+        'max_future_months' => 3,
+        'min_avail_delay_days' => 1,
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_widget_settings_form().
+ */
+function resource_timeslots_field_widget_settings_form($field, $instance) {
+  $widget = $instance['widget'];
+  $settings = $widget['settings'];
+
+  if ($widget['type'] == 'resource_timeslot_fc') {
+    $form = array();
+    $slot_options = array(
+      '00:30' => '30 min',
+      '01:00' => '1 hour',
+      '02:00' => '2 hours',
+      '04:00' => '4 hours',
+      '24:00' => '1 day',
+    );
+    $form['min_slot_size'] = array(
+      '#type' => 'select',
+      '#title' => t('Minimum slot size'),
+      '#default_value' => $settings['min_slot_size'],
+      '#options' => $slot_options,
+      '#description' => t('If you choose "1 day", the calendar displays a full month, otherwise it displays a week.'),
+    );
+    $form['min_visible_hour'] = array(
+      '#type' => 'number',
+      '#title' => t('Min visible hour'),
+      '#min' => 0,
+      '#max' => 23,
+      '#default_value' => $settings['min_visible_hour'],
+      '#description' => t('Only in time grids: the first visible hour, 24-hour format.'),
+    );
+    $form['max_visible_hour'] = array(
+      '#type' => 'number',
+      '#title' => t('Max visible hour'),
+      '#min' => 1,
+      '#max' => 24,
+      '#default_value' => $settings['max_visible_hour'],
+      '#description' => t('Only in time grids: the last visible hour, 24-hour format.'),
+    );
+    $form['calendar_height'] = array(
+      '#type' => 'number',
+      '#title' => t('Calendar height'),
+      '#min' => 250,
+      '#max' => 1000,
+      '#step' => 10,
+      '#default_value' => $settings['calendar_height'],
+      '#field_suffix' => 'px',
+      '#description' => t('If unset, the calendar automatically calculates its height.'),
+    );
+    $form['min_avail_delay_days'] = array(
+      '#type' => 'number',
+      '#title' => t('Min availability delay'),
+      '#min' => 0,
+      '#max' => 30,
+      '#default_value' => $settings['min_avail_delay_days'],
+      '#field_suffix' => t('days'),
+      '#description' => t('How many days from current date time slot availability starts.'),
+    );
+    $form['max_future_months'] = array(
+      '#type' => 'number',
+      '#title' => t('Max available future months'),
+      '#min' => 1,
+      '#max' => 24,
+      '#default_value' => $settings['max_future_months'],
+      '#field_suffix' => t('months'),
+      '#description' => t('How many months from current date slot availability ends.'),
+    );
+
+    return $form;
+  }
+}
+
+/**
+ * Implements hook_field_widget_form().
+ */
+function resource_timeslots_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+  switch ($instance['widget']['type']) {
+    case 'resource_timeslot_fc':
+      global $language;
+      $widget_settings = $instance['widget']['settings'];
+      $dateonly = ($widget_settings['min_slot_size'] == '24:00') ? TRUE : FALSE;
+      $skip_item = NULL;
+      if (!empty($form['nid'])) {
+        // One of the show-stoppers for multi-value fields.
+        $skip_item = $form['nid']['#value'];
+      }
+      $reserved = _resource_timeslots_get_reserved($field['field_name'], $dateonly, $skip_item);
+      $valid_range = _resource_timeslots_valid_range($widget_settings['min_avail_delay_days'], $widget_settings['max_future_months']);
+      $js_settings = array(
+        'reserved' => $reserved,
+        'minSlotSize' => $widget_settings['min_slot_size'],
+        'firstDay' => config_get('system.date', 'first_day'),
+        'validRange' => $valid_range,
+        'timezone' => backdrop_get_user_timezone(),
+        'langCode' => $language->langcode,
+        'slotMinTime' => str_pad($widget_settings['min_visible_hour'], 2, '0', STR_PAD_LEFT) . ':00',
+        'slotMaxTime' => str_pad(($widget_settings['max_visible_hour'] + 1), 2, '0', STR_PAD_LEFT) . ':00',
+      );
+      // Optional fixed height, auto per default.
+      $js_settings['height'] = 'auto';
+      if (!empty($widget_settings['calendar_height'])) {
+        $js_settings['height'] = (int) $widget_settings['calendar_height'];
+      }
+      // Switch calendar type based on slot size setting.
+      $js_settings['calendarType'] = 'timeGridWeek';
+      if ($widget_settings['min_slot_size'] == '24:00') {
+        $js_settings['calendarType'] = 'dayGridMonth';
+      }
+
+      $element['#attached']['js'][] = array(
+        'type' => 'setting',
+        'data' => array(
+          'resource_timeslots_setup' => array(
+            $field['field_name'] => $js_settings,
+          ),
+        ),
+      );
+      $element['#attached']['library'][] = array('resource_timeslots', 'fullcalendar');
+      $element['#attached']['js'][] = backdrop_get_path('module', 'resource_timeslots') . '/js/resource-ts.js';
+      $element['#attached']['css'][] = backdrop_get_path('module', 'resource_timeslots') . '/css/resource-ts.css';
+
+      $item_id = 'fullcal-' . $field['field_name'] . '-' . $delta;
+      // @todo Consider autocomplete if too many nodes?
+      $type = $instance['settings']['resource_node_type'];
+      $resource_options = _resource_timeslots_get_node_options($type);
+      $params = backdrop_get_query_parameters();
+      $resource_id = isset($items[$delta]['resource_id']) ? $items[$delta]['resource_id'] : '0';
+      $args = arg();
+      // New nodes can take the $_GET parameter as resource id.
+      if (count($args) > 2 && $args[0] == 'node' && $args[1] == 'add' && !empty($params['resource-id'])) {
+        if (array_key_exists($params['resource-id'], $resource_options)) {
+          // Sanitize by casting to int.
+          $resource_id = (int) $params['resource-id'];
+        }
+      }
+      $title = t('Select resource');
+      if (!empty($instance['settings']['resource_node_type'])) {
+        $node_type = node_type_get_type($instance['settings']['resource_node_type']);
+        if ($node_type) {
+          $title = t('Select @nodetype', array('@nodetype' => $node_type->name));
+        }
+      }
+      $element['resource_id'] = array(
+        '#type' => 'select',
+        '#title' => $title,
+        '#options' => $resource_options,
+        '#default_value' => $resource_id,
+        '#required' => $instance['required'],
+        '#empty_value' => '0',
+      );
+      $element['fullcalendar'] = array(
+        '#type' => 'item',
+        '#markup' => '<div id="' . $item_id . '" data-fieldname="' . $field['field_name'] . '" class="dt-range-fullcal"></div>',
+        '#states' => array(
+          'visible' => array(
+            ':input[name="' . $field['field_name'] . '[und][' . $delta . '][resource_id]"]' => array('!value' => '0'),
+          ),
+        ),
+      );
+      $element['start'] = array(
+        '#type' => 'hidden',
+        '#default_value' => isset($items[$delta]['start']) ? $items[$delta]['start'] : '',
+        '#prefix' => '<div class="fullcalendar-input">',
+        '#attributes' => array('class' => array('fc-start')),
+      );
+      $element['end'] = array(
+        '#type' => 'hidden',
+        '#default_value' => isset($items[$delta]['end']) ? $items[$delta]['end'] : '',
+        '#suffix' => '</div>',
+        '#attributes' => array('class' => array('fc-end')),
+      );
+      // Wrapper for dynamic text, gets set via js.
+      $element['startend_display'] = array(
+        '#type' => 'markup',
+        '#markup' => '<div class="start-end-display"></div>',
+      );
+
+      break;
+  }
+  return $element;
+}
+
+/**
+ * Implements hook_field_validate().
+ */
+function resource_timeslots_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors) {
+  if ($entity == NULL) {
+    // We're not on a node, but rather on the field settings form.
+    return;
+  }
+  foreach ($items as $delta => $item) {
+    if ($instance['required']) {
+      if (empty($item['resource_id']) || empty($item['start']) || empty($item['end'])) {
+        $errors[$field['field_name']][$langcode][$delta][] = array(
+          'error' => 'resource_timeslot_empty',
+          'message' => t('!name field is required.', array(
+            '!name' => $instance['label'],
+          )),
+        );
+      }
+    }
+    // Following three checks are for sanity. Values get set via select or js,
+    // but if they're invalid, they cause exceptions when saving to integer
+    // columns in the database.
+    if (!empty($item['resource_id']) && (int) $item['resource_id'] === 0) {
+      $errors[$field['field_name']][$langcode][$delta][] = array(
+        'error' => 'resource_timeslot_invalid_nid',
+        'message' => t('Invalid resource value'),
+      );
+    }
+    if (!empty($item['start']) && (int) $item['start'] === 0) {
+      $errors[$field['field_name']][$langcode][$delta][] = array(
+        'error' => 'resource_timeslot_invalid_start',
+        'message' => t('Invalid start date'),
+      );
+    }
+    if (!empty($item['end']) && (int) $item['end'] === 0) {
+      $errors[$field['field_name']][$langcode][$delta][] = array(
+        'error' => 'resource_timeslot_invalid_end',
+        'message' => t('Invalid end date'),
+      );
+    }
+    // No problem with db, but start after end makes no sense.
+    if (!empty($item['start']) && !empty($item['end'])) {
+      if ($item['start'] >= $item['end']) {
+        $errors[$field['field_name']][$langcode][$delta][] = array(
+          'error' => 'resource_timeslot_invalid_range',
+          'message' => t('Invalid date range'),
+        );
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function resource_timeslots_field_formatter_info() {
+  return array(
+    'resource_timeslot_text' => array(
+      'label' => t('Default (text)'),
+      'field types' => array('resource_timeslot'),
+    ),
+    'resource_timeslot_list' => array(
+      'label' => t('List'),
+      'field types' => array('resource_timeslot'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_theme().
+ */
+function resource_timeslots_theme($existing, $type, $theme, $path) {
+  $themes = array(
+    'resource_timeslot_oneliner' => array(
+      'file' => 'resource_timeslots.theme.inc',
+      'path' => $path,
+      'render element' => 'element',
+    ),
+    'resource_timeslot_list' => array(
+      'file' => 'resource_timeslots.theme.inc',
+      'path' => $path,
+      'render element' => 'element',
+    ),
+  );
+
+  return $themes;
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function resource_timeslots_field_formatter_view($object_type, $object, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+  switch ($display['type']) {
+    case 'resource_timeslot_text':
+      $markup = '';
+      foreach ($items as $delta => $item) {
+        $markup .= theme('resource_timeslot_oneliner', array('item' => $item));
+      }
+      $element[$delta] = array('#markup' => $markup);
+      break;
+
+    case 'resource_timeslot_list':
+      $markup = '';
+      foreach ($items as $delta => $item) {
+        $markup .= theme('resource_timeslot_list', array('item' => $item));
+      }
+      $element[$delta] = array('#markup' => $markup);
+      break;
+
+  }
+  return $element;
+}
+
+/**
+ * Implements hook_field_views_data_views_data_alter().
+ */
+function resource_timeslots_field_views_data_views_data_alter(&$data, $field) {
+  if ($field['type'] == 'resource_timeslot') {
+    $field_name = $field['field_name'];
+    $data_table_name = 'field_data_' . $field_name;
+    $revision_table_name = 'field_revision_' . $field_name;
+
+    // Inform views that our field columns are dates (timestamps).
+    $data[$data_table_name][$field_name . '_start']['field']['handler'] = 'views_handler_field_date';
+    $data[$data_table_name][$field_name . '_end']['field']['handler'] = 'views_handler_field_date';
+    $data[$data_table_name][$field_name . '_start']['filter']['handler'] = 'views_handler_filter_date';
+    $data[$data_table_name][$field_name . '_start']['sort']['handler'] = 'views_handler_sort_date';
+    $data[$data_table_name][$field_name . '_end']['filter']['handler'] = 'views_handler_filter_date';
+    $data[$data_table_name][$field_name . '_end']['sort']['handler'] = 'views_handler_sort_date';
+    // Relationship to the node table.
+    $data[$data_table_name]['table']['group'] = t('Content');
+    $data[$data_table_name][$field_name . '_resource_id']['relationship'] = array(
+      'base' => 'node',
+      'base field' => 'nid',
+      'handler' => 'views_handler_relationship',
+      'title' => 'Resource node',
+      'label' => 'Resource node',
+      'help' => 'Related resource nodes',
+    );
+  }
+}
+
+/**
+ * Implements hook_library_info().
+ */
+function resource_timeslots_library_info() {
+  $path = backdrop_get_path('module', 'resource_timeslots') . '/libraries/fullcalendar/lib';
+  $libraries['fullcalendar'] = array(
+    'title' => 'Fullcalendar recent',
+    'website' => 'https://fullcalendar.io',
+    'version' => '5.9.0',
+    'js' => array(
+      $path . '/main.min.js' => array(),
+      $path . '/locales-all.min.js' => array(),
+    ),
+    'css' => array($path . '/main.min.css' => array()),
+  );
+  return $libraries;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function resource_timeslots_form_field_ui_field_edit_form_alter(&$form, &$form_state) {
+  // We have to enforce single value to prevent several problems.
+  if ($form['#field']['type'] == 'resource_timeslot') {
+    $form['field']['cardinality_container']['cardinality']['#options'] = array(
+      'number' => t('Limited'),
+    );
+    $form['field']['cardinality_container']['cardinality_number']['#max'] = 1;
+    $form['field']['cardinality_container']['#description'] = t('This field type does not support multiple values.');
+  }
+}
+
+/**
+ * Helper function.
+ *
+ * @param string $field_name
+ *   Field machine name.
+ * @param bool $dateonly
+ *   Return timeless dates if set to TRUE, full datetime otherwiese.
+ * @param string $skip
+ *   Do not add this entity (nid) to the results, usually the current one.
+ *
+ * @return array
+ *   Keyed array of dates, to be used as Fullcalendar events.
+ */
+function _resource_timeslots_get_reserved($field_name, $dateonly = FALSE, $skip = NULL) {
+  $reserved = &backdrop_static(__FUNCTION__);
+
+  if (!isset($reserved)) {
+    $reserved = array();
+    $db_table = 'field_data_' . $field_name;
+    $col_end = $field_name . '_end';
+    $query = db_select($db_table, 't')
+      ->fields('t')
+      ->condition('deleted', '0')
+      ->condition($col_end, REQUEST_TIME, '>');
+
+    if (isset($skip)) {
+      $query->condition('entity_id', $skip, '!=');
+    }
+    $results = $query->execute()->fetchAll();
+
+    if (empty($results)) {
+      return $reserved;
+    }
+
+    $col_start = $field_name . '_start';
+    $col_nid = $field_name . '_resource_id';
+    $date_pattern = ($dateonly) ? 'Y-m-d' : 'c';
+
+    foreach ($results as $index => $item) {
+      $reserved[$item->{$col_nid}][] = array(
+        'start' => format_date($item->{$col_start}, 'custom', $date_pattern),
+        'end' => format_date($item->{$col_end}, 'custom', $date_pattern),
+        'display' => 'background',
+      );
+    }
+  }
+
+  return $reserved;
+}
+
+/**
+ * Custom helper function to get node type options.
+ *
+ * @param string $type
+ *   Node type name.
+ */
+function _resource_timeslots_get_node_options($type) {
+  $nodes = &backdrop_static(__FUNCTION__);
+  if (!isset($nodes)) {
+    // Does not work with translated nodes (different nid).
+    $query = 'SELECT nid, title FROM {node} WHERE TYPE = :type AND status = 1;';
+    $result = db_query($query, array(':type' => $type))->fetchAllAssoc('nid');
+    $nodes = array();
+    foreach ($result as $nid => $item) {
+      $nodes[$nid] = $item->title;
+    }
+  }
+  return $nodes;
+}
+
+/**
+ * Helper function to return the valid range for Fullcalendar.
+ *
+ * @param string $delay_days
+ *   Number of days to delay from today.
+ * @param string $future_months
+ *   Number of months that should be available.
+ *
+ * @return
+ *   Keyed array for range start and end.
+ */
+function _resource_timeslots_valid_range($delay_days, $future_months) {
+  $range_start = new BackdropDateTime();
+  $range_start->modify('+' . $delay_days . ' days');
+  $range_end = new BackdropDateTime();
+  $range_end->modify('+' . $future_months . ' months');
+  $valid_range = array(
+    'start' => $range_start->format('Y-m-d'),
+    'end' => $range_end->format('Y-m-d'),
+  );
+
+  return $valid_range;
+}

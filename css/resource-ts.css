@@ -1,0 +1,43 @@
+.fc-event .remove-btn {
+  display: block;
+  width: 18px;
+  height: 18px;
+  overflow: hidden;
+  background-color: #fff;
+  float: right;
+  text-indent: -200px;
+  position: relative;
+}
+.fc-event .remove-btn::before {
+  content: "";
+  display: block;
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border: 2px solid;
+  border-color: transparent transparent #666 #666;
+  transform: rotate(45deg);
+  top: 4px;
+  left: 10px;
+}
+.fc-event .remove-btn::after {
+  content: "";
+  display: block;
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border: 2px solid;
+  border-color: #666 #666 transparent transparent;
+  transform: rotate(45deg);
+  top: 4px;
+  left: -2px;
+}
+.fc-event .event-title {
+  font-weight: bold;
+}
+.fc-event .event-text {
+  clear: both;
+}
+.fc .fc-bg-event {
+  background-color: #ffcccc;
+}

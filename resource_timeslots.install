@@ -1,0 +1,29 @@
+<?php
+/**
+ * @file
+ * Install, update and uninstall functions.
+ */
+
+/**
+ * Implements hook_field_schema().
+ */
+function resource_timeslots_field_schema($field) {
+  $db_columns = array();
+  $db_columns['start'] = array(
+    'type' => 'int',
+    'not null' => FALSE,
+    'description' => 'The start date of the range',
+  );
+  $db_columns['end'] = array(
+    'type' => 'int',
+    'not null' => FALSE,
+    'description' => 'The end date of the range',
+  );
+  $db_columns['resource_id'] = array(
+    'type' => 'int',
+    'not null' => TRUE,
+    'default' => 0,
+    'description' => 'The {node}.nid of the resource node.',
+  );
+  return array('columns' => $db_columns);
+}
