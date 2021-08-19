@@ -5,9 +5,9 @@ Wraps [Fullcalendar 5.x](https://fullcalendar.io) as a reusable library.
 Provides a field type to reserve timeslots for configurable resources and the
  widget type "Timeslot Fullcalendar" to select resource and time slot.
 
-Provides token and views support for individual field subvalues.
+Provides Token and Views support for individual field subvalues.
 
-Work in progress...
+*Work in progress...*
 
 ## Use cases
 
@@ -21,14 +21,15 @@ Install this module using the official Backdrop CMS [instructions](https://backd
 
 ## Setup
 
-You need two node types, one acts as resource the other one acts as
- reservation.
+You need two content types (node types), one acts as resource the other one acts
+ as reservation.
 
 The reservation type gets a "Resource timeslot" field attached, in which you
  set the "Resource content type" to your resource type.
 
-If you want to preselect resources via links, add a "resource-id=7" parameter
- to the url, where "7" is the node ID of the resource node.
+If you want to preselect resources via links for new reservations, add a
+ `resource-id=7` parameter to the url (href), where `7` is the node ID of the
+ resource node.
 
 If you want to show special messages after submission, or send mails, use
  the [Rules](https://backdropcms.org/project/rules) module.
