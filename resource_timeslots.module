@@ -67,7 +67,6 @@ function resource_timeslots_field_widget_info() {
         'min_slot_size' => '01:00',
         'business_hours_constrain' => FALSE,
         'business_hours' => array(),
-        'calendar_height' => NULL,
         'max_future_months' => 3,
         'min_avail_delay_days' => 1,
       ),
@@ -133,17 +132,6 @@ function resource_timeslots_field_widget_settings_form($field, $instance) {
       '#max' => 24,
       '#default_value' => isset($settings['business_hours']['end']) ? $settings['business_hours']['end'] : NULL,
     );
-
-    $form['calendar_height'] = array(
-      '#type' => 'number',
-      '#title' => t('Calendar height'),
-      '#min' => 250,
-      '#max' => 1000,
-      '#step' => 10,
-      '#default_value' => $settings['calendar_height'],
-      '#field_suffix' => 'px',
-      '#description' => t('If unset, the calendar automatically calculates its height.'),
-    );
     $form['min_avail_delay_days'] = array(
       '#type' => 'number',
       '#title' => t('Min availability delay'),
@@ -202,11 +190,6 @@ function resource_timeslots_field_widget_form(&$form, &$form_state, $field, $ins
       }
       else {
         $js_settings['businessHours'] = NULL;
-      }
-      // Optional fixed height, auto per default.
-      $js_settings['height'] = 'auto';
-      if (!empty($widget_settings['calendar_height'])) {
-        $js_settings['height'] = (int) $widget_settings['calendar_height'];
       }
       // Switch calendar type based on slot size setting.
       $js_settings['calendarType'] = 'timeGridWeek';

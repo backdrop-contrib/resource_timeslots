@@ -63,7 +63,7 @@
           },
           longPressDelay: 800,
           initialView: widgetSettings.calendarType,
-          height: widgetSettings.height,
+          height: 'auto',
           allDaySlot: false,
           events: reserved,
           eventOverlap: false,
