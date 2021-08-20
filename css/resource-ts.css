@@ -41,3 +41,10 @@
 .fc .fc-bg-event {
   background-color: #ffcccc;
 }
+/* Odd FF default setting prevents noscript tags? */
+html.js .noscript-hint {
+  display: none;
+}
+.form-item-fc-slot.form-error {
+  outline: 2px solid #f00;
+}

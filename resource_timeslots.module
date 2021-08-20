@@ -225,14 +225,19 @@ function resource_timeslots_field_widget_form(&$form, &$form_state, $field, $ins
         '#required' => $instance['required'],
         '#empty_value' => '0',
       );
+      $markup = '<div id="' . $item_id . '" data-fieldname="' . $field['field_name'] . '" class="dt-range-fullcal"></div>';
+      $markup .= '<p class="noscript-hint">' . t('Javascript is required to use this form.') . '</p>';
       $element['fullcalendar'] = array(
         '#type' => 'item',
-        '#markup' => '<div id="' . $item_id . '" data-fieldname="' . $field['field_name'] . '" class="dt-range-fullcal"></div>',
+        '#markup' => $markup,
+        '#title' => t('Time slot'),
         '#states' => array(
           'visible' => array(
             ':input[name="' . $field['field_name'] . '[und][' . $delta . '][resource_id]"]' => array('!value' => '0'),
           ),
         ),
+        '#required' => $instance['required'],
+        '#wrapper_attributes' => array('class' => array('form-item-fc-slot')),
       );
       $element['start'] = array(
         '#type' => 'hidden',
