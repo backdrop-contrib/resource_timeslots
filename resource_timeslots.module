@@ -65,8 +65,8 @@ function resource_timeslots_field_widget_info() {
       'field types' => array('resource_timeslot'),
       'settings' => array(
         'min_slot_size' => '01:00',
-        'min_visible_hour' => 0,
-        'max_visible_hour' => 24,
+        'business_hours_constrain' => FALSE,
+        'business_hours' => array(),
         'calendar_height' => NULL,
         'max_future_months' => 3,
         'min_avail_delay_days' => 1,
@@ -98,22 +98,42 @@ function resource_timeslots_field_widget_settings_form($field, $instance) {
       '#options' => $slot_options,
       '#description' => t('If you choose "1 day", the calendar displays a full month, otherwise it displays a week.'),
     );
-    $form['min_visible_hour'] = array(
+    $form['business_hours_constrain'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Constrain slots to business hours'),
+      '#default_value' => $settings['business_hours_constrain'],
+    );
+    $form['business_hours'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Business hours'),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="instance[widget][settings][business_hours_constrain]"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
+    $day_options = _resource_timeslots_map_day_options();
+    $form['business_hours']['dow'] = array(
+      '#type' => 'checkboxes',
+      '#title' => t('Days of week'),
+      '#options' => $day_options,
+      '#default_value' => isset($settings['business_hours']['dow']) ? $settings['business_hours']['dow'] : array(),
+    );
+    $form['business_hours']['start'] = array(
       '#type' => 'number',
-      '#title' => t('Min visible hour'),
+      '#title' => t('First hour'),
       '#min' => 0,
       '#max' => 23,
-      '#default_value' => $settings['min_visible_hour'],
-      '#description' => t('Only in time grids: the first visible hour, 24-hour format.'),
+      '#default_value' => isset($settings['business_hours']['start']) ? $settings['business_hours']['start'] : NULL,
     );
-    $form['max_visible_hour'] = array(
+    $form['business_hours']['end'] = array(
       '#type' => 'number',
-      '#title' => t('Max visible hour'),
+      '#title' => t('Last hour'),
       '#min' => 1,
       '#max' => 24,
-      '#default_value' => $settings['max_visible_hour'],
-      '#description' => t('Only in time grids: the last visible hour, 24-hour format.'),
+      '#default_value' => isset($settings['business_hours']['end']) ? $settings['business_hours']['end'] : NULL,
     );
+
     $form['calendar_height'] = array(
       '#type' => 'number',
       '#title' => t('Calendar height'),
@@ -170,9 +190,19 @@ function resource_timeslots_field_widget_form(&$form, &$form_state, $field, $ins
         'validRange' => $valid_range,
         'timezone' => backdrop_get_user_timezone(),
         'langCode' => $language->langcode,
-        'slotMinTime' => str_pad($widget_settings['min_visible_hour'], 2, '0', STR_PAD_LEFT) . ':00',
-        'slotMaxTime' => str_pad(($widget_settings['max_visible_hour'] + 1), 2, '0', STR_PAD_LEFT) . ':00',
       );
+      // Business hours control visibility and availability.
+      if ($widget_settings['business_hours_constrain']) {
+        $js_settings['businessHours'] = array(
+          'startTime' => str_pad($widget_settings['business_hours']['start'], 2, '0', STR_PAD_LEFT) . ':00',
+          'endTime' => str_pad($widget_settings['business_hours']['end'], 2, '0', STR_PAD_LEFT) . ':00',
+        );
+        $days = _resource_timeslots_map_day_options($widget_settings['business_hours']['dow']);
+        $js_settings['businessHours']['daysOfWeek'] = array_keys($days);
+      }
+      else {
+        $js_settings['businessHours'] = NULL;
+      }
       // Optional fixed height, auto per default.
       $js_settings['height'] = 'auto';
       if (!empty($widget_settings['calendar_height'])) {
@@ -529,4 +559,49 @@ function _resource_timeslots_valid_range($delay_days, $future_months) {
   );
 
   return $valid_range;
+}
+
+/**
+ * Helper function for day mappings.
+ *
+ * Checkboxes form items do not reliably save numeric keys, Fullcalendar needs
+ * numbers, so we have to translate.
+ *
+ * @param array $map_array
+ *   Settings array (from config) to translate to number keys.
+ */
+function _resource_timeslots_map_day_options($map_array = NULL) {
+  if (!isset($map_array)) {
+    $days = array(
+      'mon' => t('Monday'),
+      'tue' => t('Tuesday'),
+      'wed' => t('Wednesday'),
+      'thu' => t('Thursday'),
+      'fri' => t('Friday'),
+      'sat' => t('Saturday'),
+      'sun' => t('Sunday'),
+    );
+    return $days;
+  }
+  elseif (is_array($map_array)) {
+    $mapping = array(
+      'mon' => 1,
+      'tue' => 2,
+      'wed' => 3,
+      'thu' => 4,
+      'fri' => 5,
+      'sat' => 6,
+      'sun' => 0,
+    );
+    $numbers = array();
+    $active = array_filter($map_array);
+    foreach ($mapping as $shortname => $number) {
+      if (array_key_exists($shortname, $active)) {
+        $numbers[$number] = $shortname;
+      }
+    }
+    return $numbers;
+  }
+
+  return FALSE;
 }

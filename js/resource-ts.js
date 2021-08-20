@@ -73,8 +73,6 @@
           validRange: validRange,
           initialDate: dateInitial,
           slotDuration: widgetSettings.minSlotSize,
-          slotMinTime: widgetSettings.slotMinTime,
-          slotMaxTime: widgetSettings.slotMaxTime,
           select: function(info) {
             calendar.addEvent({
               title: resourceTitle,
@@ -111,6 +109,15 @@
             }
           }
         };
+
+        if (widgetSettings.businessHours !== null) {
+          options.businessHours = widgetSettings.businessHours;
+          options.eventConstraint = widgetSettings.businessHours;
+          options.selectConstraint = widgetSettings.businessHours;
+          options.slotMinTime = widgetSettings.businessHours.startTime;
+          options.slotMaxTime = widgetSettings.businessHours.endTime;
+        }
+
         // Let modules or themes override options by adding a js setting
         // 'resource_timeslots_custom' to the page.
         $.extend(options, settings.resource_timeslots_custom);
