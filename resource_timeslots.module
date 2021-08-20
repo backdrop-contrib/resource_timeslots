@@ -30,7 +30,6 @@ function resource_timeslots_field_instance_settings_form($field, $instance) {
   $current_type = arg(4);
   $node_types = node_type_get_names();
   unset($node_types[$current_type]);
-  $has_data = field_has_data($field);
 
   $form['resource_node_type'] = array(
     '#type' => 'select',
@@ -39,11 +38,8 @@ function resource_timeslots_field_instance_settings_form($field, $instance) {
     '#options' => $node_types,
     '#required' => TRUE,
     '#weight' => -1,
-    '#disabled' => $has_data,
+    '#description' => t('Changing this value is not recommended, if you already have data in this field.'),
   );
-  if ($has_data) {
-    $form['resource_node_type']['#description'] = t('This field aready has data, changing the node type is not possible anymore.');
-  }
 
   return $form;
 }
