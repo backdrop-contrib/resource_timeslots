@@ -370,19 +370,17 @@ function resource_timeslots_field_formatter_view($object_type, $object, $field, 
   $element = array();
   switch ($display['type']) {
     case 'resource_timeslot_text':
-      $markup = '';
       foreach ($items as $delta => $item) {
-        $markup .= theme('resource_timeslot_oneliner', array('item' => $item));
+        $markup = theme('resource_timeslot_oneliner', array('item' => $item));
+        $element[$delta] = array('#markup' => $markup);
       }
-      $element[$delta] = array('#markup' => $markup);
       break;
 
     case 'resource_timeslot_list':
-      $markup = '';
       foreach ($items as $delta => $item) {
-        $markup .= theme('resource_timeslot_list', array('item' => $item));
+        $markup = theme('resource_timeslot_list', array('item' => $item));
+        $element[$delta] = array('#markup' => $markup);
       }
-      $element[$delta] = array('#markup' => $markup);
       break;
 
   }
