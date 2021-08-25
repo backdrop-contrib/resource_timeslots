@@ -468,8 +468,10 @@ function _resource_timeslots_get_reserved($field_name, $dateonly = FALSE, $skip 
     $reserved = array();
     $db_table = 'field_data_' . $field_name;
     $col_end = $field_name . '_end';
-    $query = db_select($db_table, 't')
-      ->fields('t')
+    $query = db_select($db_table, 't');
+    $query->join('node', 'n', 'n.nid = t.entity_id');
+    $query->fields('t')
+      ->condition('n.status', 1)
       ->condition('deleted', '0')
       ->condition($col_end, REQUEST_TIME, '>');
 
