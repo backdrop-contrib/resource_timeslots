@@ -127,8 +127,19 @@
         if (widgetSettings.calendarType == 'timeGridWeek') {
           calendar.setOption('firstDay', new Date(validRange.start).getDay());
         }
+
         if (currentItem !== null) {
           calendar.addEvent(currentItem);
+          // Make sure existing items are always visible, even if in the past.
+          calendar.setOption('firstDay', currentItem.start.getDay());
+          var rangeStart = new Date(widgetSettings.validRange.start);
+          if (rangeStart.getTime() > currentItem.start.getTime()) {
+            var pastRange = {
+              start: currentItem.start.toUTCString(),
+              end: widgetSettings.validRange.end
+            }
+            calendar.setOption('validRange', pastRange);
+          }
         }
         calendar.render();
 

@@ -41,6 +41,10 @@
 .fc .fc-bg-event {
   background-color: #ffcccc;
 }
+.fc .fc-event-past {
+  background-color: #aebbc8;
+  border-color: #aebbc8;
+}
 /* Odd FF default setting prevents noscript tags? */
 html.js .noscript-hint {
   display: none;
