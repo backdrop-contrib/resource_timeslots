@@ -203,7 +203,8 @@
       locale_e = new Date(endStr).toLocaleDateString();
     }
     // Show some text as not the complete datetime range may be visible.
-    parent.find('.start-end-display').text('You selected ' + locale_s + ' to ' + locale_e);
+    var info = Backdrop.t('You selected @start to @end', { '@start': locale_s, '@end': locale_e });
+    parent.find('.start-end-display').text(info);
   }
 
   resourceTimeslotWidget.resetFieldValue = function (selector) {
