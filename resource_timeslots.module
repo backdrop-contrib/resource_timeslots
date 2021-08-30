@@ -239,6 +239,7 @@ function resource_timeslots_field_widget_form(&$form, &$form_state, $field, $ins
         '#empty_value' => '0',
       );
       $markup = '<div id="' . $item_id . '" data-fieldname="' . $field['field_name'] . '" class="dt-range-fullcal"></div>';
+      $markup .= '<div class="start-end-display"></div>';
       $markup .= '<p class="noscript-hint">' . t('Javascript is required to use this form.') . '</p>';
       $element['fullcalendar'] = array(
         '#type' => 'item',
@@ -252,6 +253,9 @@ function resource_timeslots_field_widget_form(&$form, &$form_state, $field, $ins
         '#required' => $instance['required'],
         '#wrapper_attributes' => array('class' => array('form-item-fc-slot')),
       );
+      if (!empty($instance['description'])) {
+        $element['fullcalendar']['#description'] = $instance['description'];
+      }
       $element['start'] = array(
         '#type' => 'hidden',
         '#default_value' => isset($items[$delta]['start']) ? $items[$delta]['start'] : '',
@@ -263,11 +267,6 @@ function resource_timeslots_field_widget_form(&$form, &$form_state, $field, $ins
         '#default_value' => isset($items[$delta]['end']) ? $items[$delta]['end'] : '',
         '#suffix' => '</div>',
         '#attributes' => array('class' => array('fc-end')),
-      );
-      // Wrapper for dynamic text, gets set via js.
-      $element['startend_display'] = array(
-        '#type' => 'markup',
-        '#markup' => '<div class="start-end-display"></div>',
       );
 
       break;
