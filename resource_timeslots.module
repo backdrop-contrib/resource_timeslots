@@ -509,7 +509,7 @@ function _resource_timeslots_get_node_options($type) {
   $nodes = &backdrop_static(__FUNCTION__);
   if (!isset($nodes)) {
     // Does not work with translated nodes (different nid).
-    $query = 'SELECT nid, title FROM {node} WHERE TYPE = :type AND status = 1;';
+    $query = 'SELECT nid, title FROM {node} WHERE TYPE = :type AND status = 1 ORDER BY title ASC;';
     $result = db_query($query, array(':type' => $type))->fetchAllAssoc('nid');
     $nodes = array();
     foreach ($result as $nid => $item) {
