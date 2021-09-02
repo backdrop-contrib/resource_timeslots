@@ -45,8 +45,8 @@
           currentItem = {
             start: new Date((existingStartTs - (offset_s * 60)) * 1000),
             end: new Date((existingEndTs - (offset_e * 60)) * 1000),
-            id: 'current-item',
-          }
+            id: 'current-item'
+          };
 
           dateInitial = new Date(existingStartTs * 1000);
           canAddItems = false;
@@ -94,7 +94,7 @@
           },
           eventContent: function(arg) {
             if (arg.event._def.ui.display === 'background') {
-              return;
+              return '';
             }
             // Improvised close button.
             var markup = '<div class="remove-btn">Remove</div><div class="event-title">' + resourceTitle + '</div>';
@@ -137,7 +137,7 @@
             var pastRange = {
               start: currentItem.start.toUTCString(),
               end: widgetSettings.validRange.end
-            }
+            };
             calendar.setOption('validRange', pastRange);
           }
         }
@@ -189,7 +189,7 @@
     var timestamps = {
       start: startDate.getTime() / 1000,
       end: endDate.getTime() / 1000
-    }
+    };
     var parent = $('#' + selector).parent().parent();
     parent.find('.fullcalendar-input .fc-start').val(timestamps.start);
     parent.find('.fullcalendar-input .fc-end').val(timestamps.end);
@@ -211,13 +211,13 @@
     // Show some text as not the complete datetime range may be visible.
     var info = Backdrop.t('You selected @start to @end', { '@start': locale_s, '@end': locale_e });
     parent.find('.start-end-display').text(info);
-  }
+  };
 
   resourceTimeslotWidget.resetFieldValue = function (selector) {
     var parent = $('#' + selector).parent().parent();
     parent.find('.fullcalendar-input .fc-start').val('');
     parent.find('.fullcalendar-input .fc-end').val('');
     parent.find('.start-end-display').text('');
-  }
+  };
 
 })(jQuery);
