@@ -184,24 +184,30 @@
     // timezone.
     var startStr = start.toISOString().substr(0, 19);
     var endStr = end.toISOString().substr(0, 19);
+    var startDate = new Date(startStr);
+    var endDate = new Date(endStr);
     var timestamps = {
-      start: new Date(startStr).getTime(),
-      end: new Date(endStr).getTime(),
+      start: startDate.getTime() / 1000,
+      end: endDate.getTime() / 1000
     }
     var parent = $('#' + selector).parent().parent();
-    // JS comes with miliseconds.
-    parent.find('.fullcalendar-input .fc-start').val(timestamps.start / 1000);
-    parent.find('.fullcalendar-input .fc-end').val(timestamps.end / 1000);
-    // @todo proper display strings, translatable.
-    var locale_s, locale_e;
+    parent.find('.fullcalendar-input .fc-start').val(timestamps.start);
+    parent.find('.fullcalendar-input .fc-end').val(timestamps.end);
+
+    // Date and time format based on browsers locales, without seconds.
+    var locale_s = startDate.toLocaleDateString();
+    var locale_e = endDate.toLocaleDateString();
     if (dateonly === false) {
-      locale_s = new Date(startStr).toLocaleString();
-      locale_e = new Date(endStr).toLocaleString();
+      if (locale_s === locale_e) {
+        // If start and end date are the same, only print it once.
+        locale_e = endDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+      }
+      else {
+        locale_e += ' ' + endDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+      }
+      locale_s += ' ' + startDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     }
-    else {
-      locale_s = new Date(startStr).toLocaleDateString();
-      locale_e = new Date(endStr).toLocaleDateString();
-    }
+
     // Show some text as not the complete datetime range may be visible.
     var info = Backdrop.t('You selected @start to @end', { '@start': locale_s, '@end': locale_e });
     parent.find('.start-end-display').text(info);
