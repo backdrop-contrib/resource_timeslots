@@ -2,4 +2,5 @@ name = Resource Timeslots
 description = Provides a field to handle resource reservations based on timeslots
 type = module
 backdrop = 1.x
+package = Fields
 tags[] = Fields
