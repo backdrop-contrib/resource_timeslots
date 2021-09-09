@@ -179,33 +179,34 @@
    *   JS Date object.
    */
   resourceTimeslotWidget.updateFieldValue = function (selector, start, end, dateonly) {
-    // Warning: start/end objects get the wrong UTC offset (fullcalendar), so we
-    // have to calculate from truncated ISO string to end up with the right
-    // timezone.
-    var startStr = start.toISOString().substr(0, 19);
-    var endStr = end.toISOString().substr(0, 19);
-    var startDate = new Date(startStr);
-    var endDate = new Date(endStr);
+    // Warning: start/end objects get the wrong UTC offset (Fullcalendar), so we
+    // have to calculate from local offset to end up with the right timezone.
+    // Special care with Safari!
+    // Function getTimezoneOffset() returns minutes, we need msec.
+    var startLocal = new Date(start.getTime() + (start.getTimezoneOffset() * 60 * 1000));
+    var endLocal = new Date(end.getTime() + (end.getTimezoneOffset() * 60 * 1000));
+
     var timestamps = {
-      start: startDate.getTime() / 1000,
-      end: endDate.getTime() / 1000
+      start: startLocal.getTime() / 1000,
+      end: endLocal.getTime() / 1000
     };
+
     var parent = $('#' + selector).parent().parent();
     parent.find('.fullcalendar-input .fc-start').val(timestamps.start);
     parent.find('.fullcalendar-input .fc-end').val(timestamps.end);
 
     // Date and time format based on browsers locales, without seconds.
-    var locale_s = startDate.toLocaleDateString();
-    var locale_e = endDate.toLocaleDateString();
+    var locale_s = startLocal.toLocaleDateString();
+    var locale_e = endLocal.toLocaleDateString();
     if (dateonly === false) {
       if (locale_s === locale_e) {
         // If start and end date are the same, only print it once.
-        locale_e = endDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        locale_e = endLocal.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
       }
       else {
-        locale_e += ' ' + endDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        locale_e += ' ' + endLocal.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
       }
-      locale_s += ' ' + startDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+      locale_s += ' ' + startLocal.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     }
 
     // Show some text as not the complete datetime range may be visible.
