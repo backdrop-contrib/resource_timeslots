@@ -155,7 +155,7 @@ function resource_timeslots_field_widget_settings_form($field, $instance) {
       '#type' => 'textfield',
       '#title' => t('URL for additional reserved slots'),
       '#default_value' => isset($settings['additional_reserved_url']) ? $settings['additional_reserved_url'] : '',
-      '#description' => t('Full URL to a json feed with additional reserved slots. Use a {ID} as placeholder for the resource ID.'),
+      '#description' => t('Full URL to a json feed with additional reserved slots. Use <code>{ID}</code> as placeholder for the resource ID.'),
     );
 
     return $form;
