@@ -18,13 +18,13 @@
         var selectFormItem = $(this).parent('.form-item').prev('.form-type-select');
         var resourceId = selectFormItem.find('option:selected').val();
         var resourceTitle = selectFormItem.find('option:selected').text();
-        var reserved = [];
+        var reserved = { id: 'reserved', events: [] };
         var currentItem = null;
         var fieldName = $(this).attr('data-fieldname');
         var widgetSettings = settings.resource_timeslots_setup[fieldName];
         var validRange = widgetSettings.validRange;
         if (widgetSettings.reserved.hasOwnProperty(resourceId)) {
-          reserved = widgetSettings.reserved[resourceId];
+          reserved.events = widgetSettings.reserved[resourceId];
         }
         var dateOnly = false;
         if (widgetSettings.calendarType === 'dayGridMonth') {
@@ -65,7 +65,7 @@
           initialView: widgetSettings.calendarType,
           height: 'auto',
           allDaySlot: false,
-          events: reserved,
+          eventSources: [ reserved ],
           eventOverlap: false,
           selectOverlap: false,
           editable: true,
@@ -110,6 +110,18 @@
           }
         };
 
+        var feed = {
+          id: 'feed',
+          color: 'yellow',// debug
+          url: null
+        };
+        if (widgetSettings.feedUrl !== null) {
+          if (resourceId > 0) {
+            feed.url = widgetSettings.feedUrl.replace('{ID}', resourceId);
+            options.eventSources.push(feed);
+          }
+        }
+
         if (widgetSettings.businessHours !== null) {
           options.businessHours = widgetSettings.businessHours;
           options.eventConstraint = widgetSettings.businessHours;
@@ -144,22 +156,30 @@
         calendar.render();
 
         selectFormItem.find('select').change(function () {
-          // @todo Put this in a reusable function?
           resourceId = $(this).find('option:selected').val();
           resourceTitle = $(this).find('option:selected').text();
-          reserved = [];
+          reserved.events = [];
           if (widgetSettings.reserved.hasOwnProperty(resourceId)) {
-            reserved = widgetSettings.reserved[resourceId];
+            reserved.events = widgetSettings.reserved[resourceId];
           }
-          // When switching resources, reserved values are different. Delete the
-          // current event object to prevent unattended overlap.
+          // When switching resources, reserved values are different. Remove the
+          // old EventSource objects and add the current ones.
           var current = calendar.getEventById('current-item');
           if (current !== null) {
             current.remove();
             calendar.setOption('selectable', true);
           }
-          calendar.setOption('events', reserved);
-          calendar.render();
+          if (widgetSettings.feedUrl !== null) {
+            if (resourceId > 0) {
+              feed.url = widgetSettings.feedUrl.replace('{ID}', resourceId);
+              let eventSourceFeed = calendar.getEventSourceById('feed');
+              eventSourceFeed.remove();
+              calendar.addEventSource(feed);
+            }
+          }
+          let eventSourceLocal = calendar.getEventSourceById('reserved');
+          eventSourceLocal.remove();
+          calendar.addEventSource(reserved);
         });
 
       });

@@ -69,6 +69,7 @@ function resource_timeslots_field_widget_info() {
         'business_hours' => array(),
         'max_future_months' => 3,
         'min_avail_delay_days' => 1,
+        'additional_reserved_url' => NULL,
       ),
     ),
   );
@@ -150,6 +151,12 @@ function resource_timeslots_field_widget_settings_form($field, $instance) {
       '#field_suffix' => t('months'),
       '#description' => t('How many months from current date slot availability ends.'),
     );
+    $form['additional_reserved_url'] = array(
+      '#type' => 'textfield',
+      '#title' => t('URL for additional reserved slots'),
+      '#default_value' => isset($settings['additional_reserved_url']) ? $settings['additional_reserved_url'] : '',
+      '#description' => t('Full URL to a json feed with additional reserved slots. Use a {ID} as placeholder for the resource ID.'),
+    );
 
     return $form;
   }
@@ -178,6 +185,7 @@ function resource_timeslots_field_widget_form(&$form, &$form_state, $field, $ins
         'validRange' => $valid_range,
         'timezone' => backdrop_get_user_timezone(),
         'langCode' => $language->langcode,
+        'feedUrl' => $widget_settings['additional_reserved_url'],
       );
       // Business hours control visibility and availability.
       if ($widget_settings['business_hours_constrain']) {
