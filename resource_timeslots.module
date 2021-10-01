@@ -85,11 +85,11 @@ function resource_timeslots_field_widget_settings_form($field, $instance) {
   if ($widget['type'] == 'resource_timeslot_fc') {
     $form = array();
     $slot_options = array(
-      '00:30' => '30 min',
-      '01:00' => '1 hour',
-      '02:00' => '2 hours',
-      '04:00' => '4 hours',
-      '24:00' => '1 day',
+      '00:30' => t('30 min'),
+      '01:00' => t('1 hour'),
+      '02:00' => t('2 hours'),
+      '04:00' => t('4 hours'),
+      '24:00' => t('1 day'),
     );
     $form['min_slot_size'] = array(
       '#type' => 'select',
