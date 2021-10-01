@@ -173,12 +173,17 @@
             if (resourceId > 0) {
               feed.url = widgetSettings.feedUrl.replace('{ID}', resourceId);
               let eventSourceFeed = calendar.getEventSourceById('feed');
-              eventSourceFeed.remove();
+              if (eventSourceFeed !== null) {
+                eventSourceFeed.remove();
+              }
               calendar.addEventSource(feed);
             }
           }
           let eventSourceLocal = calendar.getEventSourceById('reserved');
-          eventSourceLocal.remove();
+          if (eventSourceLocal !== null) {
+            // Can this ever be null?
+            eventSourceLocal.remove();
+          }
           calendar.addEventSource(reserved);
         });
 
