@@ -112,7 +112,6 @@
 
         var feed = {
           id: 'feed',
-          color: 'yellow',// debug
           url: null
         };
         if (widgetSettings.feedUrl !== null) {
