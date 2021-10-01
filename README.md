@@ -1,13 +1,12 @@
 # Resource Timeslots
 
-Wraps [Fullcalendar 5.x](https://fullcalendar.io) as a reusable library.
-
 Provides a field type to reserve timeslots for configurable resources and the
  widget type "Timeslot Fullcalendar" to select resource and time slot.
 
 Provides Token and Views support for individual field subvalues.
 
-*Work in progress...*
+Wraps [Fullcalendar 5.x](https://fullcalendar.io) as a reusable library.
+
 
 ## Use cases
 
