@@ -110,17 +110,6 @@
           }
         };
 
-        var feed = {
-          id: 'feed',
-          url: null
-        };
-        if (widgetSettings.feedUrl !== null) {
-          if (resourceId > 0) {
-            feed.url = widgetSettings.feedUrl.replace('{ID}', resourceId);
-            options.eventSources.push(feed);
-          }
-        }
-
         if (widgetSettings.businessHours !== null) {
           options.businessHours = widgetSettings.businessHours;
           options.eventConstraint = widgetSettings.businessHours;
@@ -153,6 +142,20 @@
           }
         }
         calendar.render();
+
+        // Maybe a race condition, but the feed doesn't initially work if the
+        // resource ID got set via GET param. So we fetch after render, which
+        // seems to work.
+        var feed = {
+          id: 'feed',
+          url: null
+        };
+        if (widgetSettings.feedUrl !== null) {
+          if (resourceId > 0) {
+            feed.url = widgetSettings.feedUrl.replace('{ID}', resourceId);
+            calendar.addEventSource(feed);
+          }
+        }
 
         selectFormItem.find('select').change(function () {
           resourceId = $(this).find('option:selected').val();
