@@ -1,7 +1,8 @@
 # Resource Timeslots
 
 Provides a field type to reserve timeslots for configurable resources and the
- widget type "Timeslot Fullcalendar" to select resource and time slot.
+ widget type "Timeslot Fullcalendar" to conveniently select resource and time
+ slot.
 
 Provides Token and Views support for individual field subvalues.
 
@@ -11,8 +12,8 @@ Wraps [Fullcalendar 5.x](https://fullcalendar.io) as a reusable library.
 ## Use cases
 
 If you have resources that can only be used once at a time, like rooms, cars,
- books, machines, or whatever equipment, then Resource Timeslots can help to
- organize reservations in a simple and user friendly way.
+ machines, or whatever equipment, then Resource Timeslots can help to collect
+ reservations in a simple and user friendly way.
 
 ## Installation
 
