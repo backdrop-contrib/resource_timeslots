@@ -71,6 +71,9 @@ function resource_timeslots_field_widget_info() {
         'min_avail_delay_days' => 1,
         'additional_reserved_url' => NULL,
       ),
+      'behaviors' => array(
+        'multiple values' => FIELD_BEHAVIOR_CUSTOM,
+      ),
     ),
   );
 }
@@ -238,7 +241,11 @@ function resource_timeslots_field_widget_form(&$form, &$form_state, $field, $ins
           $title = t('Select @nodetype', array('@nodetype' => $node_type->name));
         }
       }
-      $element['resource_id'] = array(
+      $element['resource_timeslot'] = array(
+        '#type' => 'container',
+        '#title' => 'test',
+      );
+      $element['resource_timeslot']['resource_id'] = array(
         '#type' => 'select',
         '#title' => $title,
         '#options' => $resource_options,
@@ -249,13 +256,13 @@ function resource_timeslots_field_widget_form(&$form, &$form_state, $field, $ins
       $markup = '<div id="' . $item_id . '" data-fieldname="' . $field['field_name'] . '" class="dt-range-fullcal"></div>';
       $markup .= '<div class="start-end-display"></div>';
       $markup .= '<p class="noscript-hint">' . t('Javascript is required to use this form.') . '</p>';
-      $element['fullcalendar'] = array(
+      $element['resource_timeslot']['fullcalendar'] = array(
         '#type' => 'item',
         '#markup' => $markup,
         '#title' => t('Time slot'),
         '#states' => array(
           'visible' => array(
-            ':input[name="' . $field['field_name'] . '[und][' . $delta . '][resource_id]"]' => array('!value' => '0'),
+            ':input[name="' . $field['field_name'] . '[und][resource_timeslot][resource_id]"]' => array('!value' => '0'),
           ),
         ),
         '#required' => $instance['required'],
@@ -264,13 +271,13 @@ function resource_timeslots_field_widget_form(&$form, &$form_state, $field, $ins
       if (!empty($instance['description'])) {
         $element['fullcalendar']['#description'] = $instance['description'];
       }
-      $element['start'] = array(
+      $element['resource_timeslot']['start'] = array(
         '#type' => 'hidden',
         '#default_value' => isset($items[$delta]['start']) ? $items[$delta]['start'] : '',
         '#prefix' => '<div class="fullcalendar-input">',
         '#attributes' => array('class' => array('fc-start')),
       );
-      $element['end'] = array(
+      $element['resource_timeslot']['end'] = array(
         '#type' => 'hidden',
         '#default_value' => isset($items[$delta]['end']) ? $items[$delta]['end'] : '',
         '#suffix' => '</div>',
