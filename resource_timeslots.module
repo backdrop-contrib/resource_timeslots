@@ -273,16 +273,23 @@ function resource_timeslots_field_widget_form(&$form, &$form_state, $field, $ins
         $element['fullcalendar']['#description'] = $instance['description'];
       }
       // @todo callback?
-      foreach ($items as $delta => $item) {
-        // The "Z" is essential - otherwiese Fullcalendar shifts dates.
-        $items[$delta]['start'] = format_date($items[$delta]['start'], 'custom', 'Y-m-d\TH:i:s\Z');
-        $items[$delta]['end'] = format_date($items[$delta]['end'], 'custom', 'Y-m-d\TH:i:s\Z');
-        // Not needed for js.
-        unset($items[$delta]['resource_id']);
+      $values = array();
+      $encoded = '[]';
+      if (array_key_exists('data', $items[0])) {
+        // Back from preview, re-use already parsed data from tempstore.
+        $encoded = $items[0]['data'];
+      }
+      else {
+        foreach ($items as $delta => $item) {
+          // The "Z" is essential - otherwiese Fullcalendar shifts dates.
+          $values[$delta]['start'] = format_date($items[$delta]['start'], 'custom', 'Y-m-d\TH:i:s\Z');
+          $values[$delta]['end'] = format_date($items[$delta]['end'], 'custom', 'Y-m-d\TH:i:s\Z');
+        }
+        $encoded = json_encode($values);
       }
       $element['resource_timeslot']['data'] = array(
         '#type' => 'hidden',
-        '#default_value' => json_encode($items),
+        '#default_value' => $encoded,
         '#attributes' => array('class' => array('fc-data')),
       );
 
@@ -389,6 +396,16 @@ function resource_timeslots_theme($existing, $type, $theme, $path) {
  */
 function resource_timeslots_field_formatter_view($object_type, $object, $field, $instance, $langcode, $items, $display) {
   $element = array();
+  if (array_key_exists('data', $items[0])) {
+    $message = t('Field %label does not support dynamic previews.', array(
+      '%label' => $instance['label'],
+    ));
+    $element[0] = array(
+      '#type' => 'markup',
+      '#markup' => '<p>' . $message . '</p>',
+    );
+    return $element;
+  }
   switch ($display['type']) {
     case 'resource_timeslot_text':
       foreach ($items as $delta => $item) {
