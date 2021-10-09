@@ -48,7 +48,7 @@ function resource_timeslots_field_instance_settings_form($field, $instance) {
  * Implements hook_field_is_empty().
  */
 function resource_timeslots_field_is_empty($item, $field) {
-  if (empty($item['resource_id']) || empty($item['data'])) {
+  if (empty($item['resource_id']) || empty($item['data']) || $item['data'] == '[]') {
     return TRUE;
   }
 
@@ -275,7 +275,7 @@ function resource_timeslots_field_widget_form(&$form, &$form_state, $field, $ins
       // @todo callback?
       $values = array();
       $encoded = '[]';
-      if (array_key_exists('data', $items[0])) {
+      if (isset($items[0]) && array_key_exists('data', $items[0])) {
         // Back from preview, re-use already parsed data from tempstore.
         $encoded = $items[0]['data'];
       }
@@ -325,7 +325,7 @@ function resource_timeslots_field_validate($entity_type, $entity, $field, $insta
         'message' => t('Invalid resource value'),
       );
     }
-    if (!empty($item['data']) && json_decode($item['data']) == NULL) {
+    if (!empty($item['data']) && $item['data'] != '[]' && json_decode($item['data']) == NULL) {
       $errors[$field['field_name']][$langcode][$delta][] = array(
         'error' => 'resource_timeslot_invalid_end',
         'message' => t('Invalid data'),
@@ -339,6 +339,9 @@ function resource_timeslots_field_validate($entity_type, $entity, $field, $insta
  */
 function resource_timeslots_field_presave($entity_type, $entity, $field, $instance, $langcode, &$items) {
   $items_processed = array();
+  if (empty($items)) {
+    return $items_processed;
+  }
   // One item contains all data we need.
   $data = json_decode($items[0]['data']);
   foreach ($data as $item) {
@@ -396,6 +399,9 @@ function resource_timeslots_theme($existing, $type, $theme, $path) {
  */
 function resource_timeslots_field_formatter_view($object_type, $object, $field, $instance, $langcode, $items, $display) {
   $element = array();
+  if (empty($items)) {
+    return $element;
+  }
   if (array_key_exists('data', $items[0])) {
     $message = t('Field %label does not support dynamic previews.', array(
       '%label' => $instance['label'],
