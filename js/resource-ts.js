@@ -11,14 +11,12 @@
         var calendarId = item.attributes.id.nodeValue;
         var calendarEl = document.getElementById(calendarId);
 
-        var inputContainer = $(this).parent('.form-item').next('.fullcalendar-input');
-        var existingStartTs = inputContainer.find('.fc-start').val();
         var dateInitial = null;
         var selectFormItem = $(this).parent('.form-item').prev('.form-type-select');
         var resourceId = selectFormItem.find('option:selected').val();
         var resourceTitle = selectFormItem.find('option:selected').text();
         var reserved = { id: 'reserved', events: [] };
-        var fcData = $(this).parent('.form-item').next().next('.fc-data').val();// @todo one next has to go.
+        var fcData = $(this).parent('.form-item').next('.fc-data').val();
         var currentItems = JSON.parse(fcData);
         var fieldName = $(this).attr('data-fieldname');
         var widgetSettings = settings.resource_timeslots_setup[fieldName];
@@ -67,12 +65,10 @@
             }
           },
           eventResize: function(info) {
-            var range = info.event._instance.range;
-            resourceTimeslotWidget.updateFieldValue(calendarId, range.start, range.end, dateOnly);
+            resourceTimeslotWidget.updateFieldValue(calendarId, calendar.getEvents(), dateOnly);
           },
           eventDrop: function(info) {
-            var range = info.event._instance.range;
-            resourceTimeslotWidget.updateFieldValue(calendarId, range.start, range.end, dateOnly);
+            resourceTimeslotWidget.updateFieldValue(calendarId, calendar.getEvents(), dateOnly);
           },
           eventContent: function(arg) {
             if (arg.event._def.ui.display === 'background') {
@@ -86,8 +82,10 @@
           eventClick: function(info) {
             if (info.jsEvent.srcElement.className === 'remove-btn') {
               info.event.remove();
-              resourceTimeslotWidget.resetFieldValue(calendarId);
-              calendar.setOption('selectable', true);// @todo cardinality
+              let count = resourceTimeslotWidget.updateFieldValue(calendarId, calendar.getEvents(), dateOnly);
+              if (count < maxValues) {
+                calendar.setOption('selectable', true);
+              }
             }
           }
         };
@@ -244,10 +242,16 @@
     */
 
     // Allow different styling, if a slot is selected.
-    parent.addClass('slot-selected');
+    if (result.length > 0) {
+      parent.addClass('slot-selected');
+    }
+    else {
+      parent.removeClass('slot-selected');
+    }
     return result.length;
   };
 
+  // @todo this isn't used anymore.
   resourceTimeslotWidget.resetFieldValue = function (selector) {
     var parent = $('#' + selector).parent().parent();
     parent.find('.fullcalendar-input .fc-start').val('');

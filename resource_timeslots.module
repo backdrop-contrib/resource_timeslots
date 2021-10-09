@@ -272,24 +272,12 @@ function resource_timeslots_field_widget_form(&$form, &$form_state, $field, $ins
       if (!empty($instance['description'])) {
         $element['fullcalendar']['#description'] = $instance['description'];
       }
-      $element['resource_timeslot']['start'] = array(
-        '#type' => 'hidden',
-        '#default_value' => isset($items[$delta]['start']) ? $items[$delta]['start'] : '',
-        '#prefix' => '<div class="fullcalendar-input">',
-        '#attributes' => array('class' => array('fc-start')),
-      );
-      $element['resource_timeslot']['end'] = array(
-        '#type' => 'hidden',
-        '#default_value' => isset($items[$delta]['end']) ? $items[$delta]['end'] : '',
-        '#suffix' => '</div>',
-        '#attributes' => array('class' => array('fc-end')),
-      );
       // @todo callback?
       foreach ($items as $delta => $item) {
         // The "Z" is essential - otherwiese Fullcalendar shifts dates.
         $items[$delta]['start'] = format_date($items[$delta]['start'], 'custom', 'Y-m-d\TH:i:s\Z');
         $items[$delta]['end'] = format_date($items[$delta]['end'], 'custom', 'Y-m-d\TH:i:s\Z');
-        // Probably not needed.
+        // Not needed for js.
         unset($items[$delta]['resource_id']);
       }
       $element['resource_timeslot']['data'] = array(
