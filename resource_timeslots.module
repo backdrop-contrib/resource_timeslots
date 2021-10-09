@@ -371,6 +371,10 @@ function resource_timeslots_field_formatter_info() {
       'label' => t('List'),
       'field types' => array('resource_timeslot'),
     ),
+    'resource_timeslot_table' => array(
+      'label' => t('Table'),
+      'field types' => array('resource_timeslot'),
+    ),
   );
 }
 
@@ -385,6 +389,11 @@ function resource_timeslots_theme($existing, $type, $theme, $path) {
       'render element' => 'element',
     ),
     'resource_timeslot_list' => array(
+      'file' => 'resource_timeslots.theme.inc',
+      'path' => $path,
+      'render element' => 'element',
+    ),
+    'resource_timeslot_table' => array(
       'file' => 'resource_timeslots.theme.inc',
       'path' => $path,
       'render element' => 'element',
@@ -425,6 +434,14 @@ function resource_timeslots_field_formatter_view($object_type, $object, $field, 
         $markup = theme('resource_timeslot_list', array('item' => $item));
         $element[$delta] = array('#markup' => $markup);
       }
+      break;
+
+    case 'resource_timeslot_table':
+      $markup = theme('resource_timeslot_table', array('items' => $items));
+      $element[0] = array(
+        '#type' => 'markup',
+        '#markup' => $markup,
+      );
       break;
 
   }

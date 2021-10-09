@@ -60,3 +60,35 @@ function theme_resource_timeslot_list($variables) {
 
   return $output;
 }
+
+/**
+ * Returns a table.
+ */
+function theme_resource_timeslot_table($variables) {
+  $header = array(
+    t('Resource'),
+    t('From'),
+    t('To'),
+  );
+  $rows = array();
+
+  if (!empty($variables['items']) && isset($variables['items'][0]['resource_id'])) {
+    $items = $variables['items'];
+    $node = node_load($items[0]['resource_id']);
+    $title = $node->title;
+    foreach ($items as $item) {
+      $rows[] = array(
+        $title,
+        format_date($item['start']),
+        format_date($item['end']),
+      );
+    }
+  }
+  $data = array(
+    'header' => $header,
+    'rows' => $rows,
+  );
+  $output = theme('table', $data);
+
+  return $output;
+}
