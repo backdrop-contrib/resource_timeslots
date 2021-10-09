@@ -14,14 +14,15 @@
         var inputContainer = $(this).parent('.form-item').next('.fullcalendar-input');
         var existingStartTs = inputContainer.find('.fc-start').val();
         var dateInitial = null;
-        var canAddItems = true;
         var selectFormItem = $(this).parent('.form-item').prev('.form-type-select');
         var resourceId = selectFormItem.find('option:selected').val();
         var resourceTitle = selectFormItem.find('option:selected').text();
         var reserved = { id: 'reserved', events: [] };
-        var currentItem = null;
+        var fcData = $(this).parent('.form-item').next().next('.fc-data').val();// @todo one next has to go.
+        var currentItems = JSON.parse(fcData);
         var fieldName = $(this).attr('data-fieldname');
         var widgetSettings = settings.resource_timeslots_setup[fieldName];
+        var maxValues = Number(widgetSettings.maxValues);
         var validRange = widgetSettings.validRange;
         if (widgetSettings.reserved.hasOwnProperty(resourceId)) {
           reserved.events = widgetSettings.reserved[resourceId];
@@ -29,27 +30,6 @@
         var dateOnly = false;
         if (widgetSettings.calendarType === 'dayGridMonth') {
           dateOnly = true;
-        }
-
-        if (existingStartTs.length > 0) {
-          // Get values from hidden field, should be numbers to calculate.
-          var existingEndTs = Number(inputContainer.find('.fc-end').val());
-          existingStartTs = Number(existingStartTs);
-          // When Fullcalendar considers timezone, it "shifts" all dates, so we
-          // have to do the same in the other direction to end up with the
-          // correct timezone based on our Unix timestamps.
-          // @todo This may have side effects.
-          var offset_s = new Date(existingStartTs * 1000).getTimezoneOffset();
-          var offset_e = new Date(existingEndTs * 1000).getTimezoneOffset();
-
-          currentItem = {
-            start: new Date((existingStartTs - (offset_s * 60)) * 1000),
-            end: new Date((existingEndTs - (offset_e * 60)) * 1000),
-            id: 'current-item'
-          };
-
-          dateInitial = new Date(existingStartTs * 1000);
-          canAddItems = false;
         }
 
         var options = {
@@ -69,7 +49,7 @@
           eventOverlap: false,
           selectOverlap: false,
           editable: true,
-          selectable: canAddItems,
+          selectable: true,
           validRange: validRange,
           initialDate: dateInitial,
           slotDuration: widgetSettings.minSlotSize,
@@ -78,11 +58,13 @@
               title: resourceTitle,
               start: info.startStr,
               end: info.endStr,
-              id: 'current-item'
+              classNames: ['current-items']
             });
-            resourceTimeslotWidget.updateFieldValue(calendarId, info.start, info.end, dateOnly);
-            // We stop after one added event, one value per field delta.
-            calendar.setOption('selectable', false);
+            let count = resourceTimeslotWidget.updateFieldValue(calendarId, calendar.getEvents(), dateOnly);
+            // Consider field cardinality.
+            if (count >= maxValues) {
+              calendar.setOption('selectable', false);
+            }
           },
           eventResize: function(info) {
             var range = info.event._instance.range;
@@ -105,7 +87,7 @@
             if (info.jsEvent.srcElement.className === 'remove-btn') {
               info.event.remove();
               resourceTimeslotWidget.resetFieldValue(calendarId);
-              calendar.setOption('selectable', true);
+              calendar.setOption('selectable', true);// @todo cardinality
             }
           }
         };
@@ -128,18 +110,30 @@
           calendar.setOption('firstDay', new Date(validRange.start).getDay());
         }
 
-        if (currentItem !== null) {
-          calendar.addEvent(currentItem);
-          // Make sure existing items are always visible, even if in the past.
-          calendar.setOption('firstDay', currentItem.start.getDay());
-          var rangeStart = new Date(widgetSettings.validRange.start);
-          if (rangeStart.getTime() > currentItem.start.getTime()) {
+        if (currentItems.length) {
+          for (let i = 0; i < currentItems.length; i++) {
+            var slot = {
+              start: new Date(currentItems[i].start),
+              end: new Date(currentItems[i].end),
+              classNames: ['current-items']
+            }
+            currentItems[i] = slot;
+            calendar.addEvent(slot);
+          }
+          if (currentItems.length >= maxValues) {
+            calendar.setOption('selectable', false);
+          }
+          // Make sure existing items are always accessible, even if in the past.
+          var rangeStart = new Date(options.validRange.start);
+          if (rangeStart.getTime() > currentItems[0].start.getTime()) {
             var pastRange = {
-              start: currentItem.start.toUTCString(),
+              start: currentItems[0].start.toUTCString(),
               end: widgetSettings.validRange.end
             };
             calendar.setOption('validRange', pastRange);
           }
+          // Go to the first existing slot.
+          calendar.gotoDate(slot.start);
         }
         calendar.render();
 
@@ -200,29 +194,37 @@
   /**
    * @param string selector
    *   HTML ID of the current calendar container.
-   * @param object start
-   *   JS Date object.
-   * @param object end
-   *   JS Date object.
+   * @param array values
+   *   Array of all Fullcalendar event objects, including background events.
+   * @param bool dateonly
+   *   Whether date or date and time should be displayed.
+   *
+   * @return int
+   *   Number of current events.
    */
-  resourceTimeslotWidget.updateFieldValue = function (selector, start, end, dateonly) {
+  resourceTimeslotWidget.updateFieldValue = function (selector, values, dateonly) {
     // Warning: start/end objects get the wrong UTC offset (Fullcalendar), so we
     // have to calculate from local offset to end up with the right timezone.
     // Special care with Safari!
     // Function getTimezoneOffset() returns minutes, we need msec.
-    var startLocal = new Date(start.getTime() + (start.getTimezoneOffset() * 60 * 1000));
-    var endLocal = new Date(end.getTime() + (end.getTimezoneOffset() * 60 * 1000));
-
-    var timestamps = {
-      start: startLocal.getTime() / 1000,
-      end: endLocal.getTime() / 1000
-    };
-
+    var result = [];
+    for (let i = 0; i < values.length; i++) {
+      // Filter out the current (dynamic) items.
+      if (values[i].classNames.indexOf('current-items') > -1) {
+        var startLocal = new Date(values[i].start.getTime() + (values[i].start.getTimezoneOffset() * 60 * 1000));
+        var endLocal = new Date(values[i].end.getTime() + (values[i].end.getTimezoneOffset() * 60 * 1000));
+        result.push({
+          start: startLocal,
+          end: endLocal
+        });
+      }
+    }
     var parent = $('#' + selector).parent().parent();
-    parent.find('.fullcalendar-input .fc-start').val(timestamps.start);
-    parent.find('.fullcalendar-input .fc-end').val(timestamps.end);
+    parent.find('.fc-data').val(JSON.stringify(result));
 
+    /*
     // Date and time format based on browsers locales, without seconds.
+    // @todo how to make this useful with multiple values?
     var locale_s = startLocal.toLocaleDateString();
     var locale_e = endLocal.toLocaleDateString();
     if (dateonly === false) {
@@ -239,15 +241,18 @@
     // Show some text as not the complete datetime range may be visible.
     var info = Backdrop.t('You selected @start to @end', { '@start': locale_s, '@end': locale_e });
     parent.find('.start-end-display').text(info);
+    */
 
     // Allow different styling, if a slot is selected.
     parent.addClass('slot-selected');
+    return result.length;
   };
 
   resourceTimeslotWidget.resetFieldValue = function (selector) {
     var parent = $('#' + selector).parent().parent();
     parent.find('.fullcalendar-input .fc-start').val('');
     parent.find('.fullcalendar-input .fc-end').val('');
+    //parent.find('.fc-data').val('');
     parent.find('.start-end-display').text('');
 
     parent.removeClass('slot-selected');
