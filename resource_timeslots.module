@@ -183,7 +183,7 @@ function resource_timeslots_field_widget_form(&$form, &$form_state, $field, $ins
       $valid_range = _resource_timeslots_valid_range($widget_settings['min_avail_delay_days'], $widget_settings['max_future_months']);
       $js_settings = array(
         'reserved' => $reserved,
-        'maxValues' => $field['cardinality'],
+        'maxValues' => ($field['cardinality'] == FIELD_CARDINALITY_UNLIMITED) ? 100 : $field['cardinality'],
         'minSlotSize' => $widget_settings['min_slot_size'],
         'firstDay' => config_get('system.date', 'first_day'),
         'validRange' => $valid_range,
@@ -332,13 +332,14 @@ function resource_timeslots_field_validate($entity_type, $entity, $field, $insta
  */
 function resource_timeslots_field_presave($entity_type, $entity, $field, $instance, $langcode, &$items) {
   $items_processed = array();
-  foreach ($items as $item) {
-    $data = json_decode($item['data']);
-    $start = new DateTime($data[0]->start);
-    $end = new DateTime($data[0]->end);
+  // One item contains all data we need.
+  $data = json_decode($items[0]['data']);
+  foreach ($data as $item) {
+    $start = new DateTime($item->start);
+    $end = new DateTime($item->end);
     if (is_object($start) && is_object($end)) {
       $items_processed[] = array(
-        'resource_id' => $item['resource_id'],
+        'resource_id' => $items[0]['resource_id'],
         'start' => $start->format('U'),
         'end' => $end->format('U'),
       );
@@ -452,20 +453,6 @@ function resource_timeslots_library_info() {
     'css' => array($path . '/main.min.css' => array()),
   );
   return $libraries;
-}
-
-/**
- * Implements hook_form_FORM_ID_alter().
- */
-function resource_timeslots_form_field_ui_field_edit_form_alter(&$form, &$form_state) {
-  // We have to enforce single value to prevent several problems.
-  if ($form['#field']['type'] == 'resource_timeslot') {
-    $form['field']['cardinality_container']['cardinality']['#options'] = array(
-      'number' => t('Limited'),
-    );
-    $form['field']['cardinality_container']['cardinality_number']['#max'] = 1;
-    $form['field']['cardinality_container']['#description'] = t('This field type does not support multiple values.');
-  }
 }
 
 /**
