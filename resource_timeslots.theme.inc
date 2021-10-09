@@ -75,7 +75,7 @@ function theme_resource_timeslot_table($variables) {
   if (!empty($variables['items']) && isset($variables['items'][0]['resource_id'])) {
     $items = $variables['items'];
     $node = node_load($items[0]['resource_id']);
-    $title = $node->title;
+    $title = check_plain($node->title);
     foreach ($items as $item) {
       $rows[] = array(
         $title,
