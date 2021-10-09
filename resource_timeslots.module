@@ -48,7 +48,7 @@ function resource_timeslots_field_instance_settings_form($field, $instance) {
  * Implements hook_field_is_empty().
  */
 function resource_timeslots_field_is_empty($item, $field) {
-  if (empty($item['start']) || empty($item['end']) || empty($item['resource_id'])) {
+  if (empty($item['resource_id']) || empty($item['data'])) {
     return TRUE;
   }
 
@@ -313,7 +313,7 @@ function resource_timeslots_field_validate($entity_type, $entity, $field, $insta
   }
   foreach ($items as $delta => $item) {
     if ($instance['required']) {
-      if (empty($item['resource_id']) || empty($item['start']) || empty($item['end'])) {
+      if (empty($item['resource_id']) || empty($item['data'])) {
         $errors[$field['field_name']][$langcode][$delta][] = array(
           'error' => 'resource_timeslot_empty',
           'message' => t('!name field is required.', array(
@@ -322,37 +322,41 @@ function resource_timeslots_field_validate($entity_type, $entity, $field, $insta
         );
       }
     }
-    // Following three checks are for sanity. Values get set via select or js,
-    // but if they're invalid, they cause exceptions when saving to integer
-    // columns in the database.
+    // Following two checks are for sanity, as values get set via select or js
+    // and should always pass.
     if (!empty($item['resource_id']) && (int) $item['resource_id'] === 0) {
       $errors[$field['field_name']][$langcode][$delta][] = array(
         'error' => 'resource_timeslot_invalid_nid',
         'message' => t('Invalid resource value'),
       );
     }
-    if (!empty($item['start']) && (int) $item['start'] === 0) {
-      $errors[$field['field_name']][$langcode][$delta][] = array(
-        'error' => 'resource_timeslot_invalid_start',
-        'message' => t('Invalid start date'),
-      );
-    }
-    if (!empty($item['end']) && (int) $item['end'] === 0) {
+    if (!empty($item['data']) && json_decode($item['data']) == NULL) {
       $errors[$field['field_name']][$langcode][$delta][] = array(
         'error' => 'resource_timeslot_invalid_end',
-        'message' => t('Invalid end date'),
+        'message' => t('Invalid data'),
       );
     }
-    // No problem with db, but start after end makes no sense.
-    if (!empty($item['start']) && !empty($item['end'])) {
-      if ($item['start'] >= $item['end']) {
-        $errors[$field['field_name']][$langcode][$delta][] = array(
-          'error' => 'resource_timeslot_invalid_range',
-          'message' => t('Invalid date range'),
-        );
-      }
+  }
+}
+
+/**
+ * Implements hook_field_presave().
+ */
+function resource_timeslots_field_presave($entity_type, $entity, $field, $instance, $langcode, &$items) {
+  $items_processed = array();
+  foreach ($items as $item) {
+    $data = json_decode($item['data']);
+    $start = new DateTime($data[0]->start);
+    $end = new DateTime($data[0]->end);
+    if (is_object($start) && is_object($end)) {
+      $items_processed[] = array(
+        'resource_id' => $item['resource_id'],
+        'start' => $start->format('U'),
+        'end' => $end->format('U'),
+      );
     }
   }
+  $items = $items_processed;
 }
 
 /**

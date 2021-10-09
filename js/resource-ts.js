@@ -211,11 +211,11 @@
     for (let i = 0; i < values.length; i++) {
       // Filter out the current (dynamic) items.
       if (values[i].classNames.indexOf('current-items') > -1) {
-        var startLocal = new Date(values[i].start.getTime() + (values[i].start.getTimezoneOffset() * 60 * 1000));
-        var endLocal = new Date(values[i].end.getTime() + (values[i].end.getTimezoneOffset() * 60 * 1000));
+        var startUTC = new Date(values[i].start.getTime() + (values[i].start.getTimezoneOffset() * 60 * 1000));
+        var endUTC = new Date(values[i].end.getTime() + (values[i].end.getTimezoneOffset() * 60 * 1000));
         result.push({
-          start: startLocal,
-          end: endLocal
+          start: startUTC,
+          end: endUTC
         });
       }
     }
