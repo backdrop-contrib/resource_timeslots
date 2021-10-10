@@ -187,7 +187,6 @@ function resource_timeslots_field_widget_form(&$form, &$form_state, $field, $ins
         'minSlotSize' => $widget_settings['min_slot_size'],
         'firstDay' => config_get('system.date', 'first_day'),
         'validRange' => $valid_range,
-        'timezone' => backdrop_get_user_timezone(),
         'langCode' => $language->langcode,
         'feedUrl' => $widget_settings['additional_reserved_url'],
       );
@@ -281,9 +280,10 @@ function resource_timeslots_field_widget_form(&$form, &$form_state, $field, $ins
       }
       else {
         foreach ($items as $delta => $item) {
-          // The "Z" is essential - otherwiese Fullcalendar shifts dates.
-          $values[$delta]['start'] = format_date($items[$delta]['start'], 'custom', 'Y-m-d\TH:i:s\Z');
-          $values[$delta]['end'] = format_date($items[$delta]['end'], 'custom', 'Y-m-d\TH:i:s\Z');
+          // Add dates parsable by js.
+          // @todo Tricky timezone shifts in some browsers...
+          $values[$delta]['start'] = format_date($items[$delta]['start'], 'custom', 'Y-m-d H:i:s');
+          $values[$delta]['end'] = format_date($items[$delta]['end'], 'custom', 'Y-m-d H:i:s');
         }
         $encoded = json_encode($values);
       }

@@ -25,13 +25,8 @@
         if (widgetSettings.reserved.hasOwnProperty(resourceId)) {
           reserved.events = widgetSettings.reserved[resourceId];
         }
-        var dateOnly = false;
-        if (widgetSettings.calendarType === 'dayGridMonth') {
-          dateOnly = true;
-        }
 
         var options = {
-          timeZone: widgetSettings.timezone,
           firstDay: widgetSettings.firstDay,
           locale: widgetSettings.langCode,
           headerToolbar: {
@@ -58,17 +53,17 @@
               end: info.endStr,
               classNames: ['current-items']
             });
-            let count = resourceTimeslotWidget.updateFieldValue(calendarId, calendar.getEvents(), dateOnly);
+            let count = resourceTimeslotWidget.updateFieldValue(calendarId, calendar.getEvents(), maxValues);
             // Consider field cardinality.
             if (count >= maxValues) {
               calendar.setOption('selectable', false);
             }
           },
           eventResize: function(info) {
-            resourceTimeslotWidget.updateFieldValue(calendarId, calendar.getEvents(), dateOnly);
+            resourceTimeslotWidget.updateFieldValue(calendarId, calendar.getEvents(), maxValues);
           },
           eventDrop: function(info) {
-            resourceTimeslotWidget.updateFieldValue(calendarId, calendar.getEvents(), dateOnly);
+            resourceTimeslotWidget.updateFieldValue(calendarId, calendar.getEvents(), maxValues);
           },
           eventContent: function(arg) {
             if (arg.event._def.ui.display === 'background') {
@@ -82,7 +77,7 @@
           eventClick: function(info) {
             if (info.jsEvent.srcElement.className === 'remove-btn') {
               info.event.remove();
-              let count = resourceTimeslotWidget.updateFieldValue(calendarId, calendar.getEvents(), dateOnly);
+              let count = resourceTimeslotWidget.updateFieldValue(calendarId, calendar.getEvents(), maxValues);
               if (count < maxValues) {
                 calendar.setOption('selectable', true);
               }
@@ -150,19 +145,33 @@
         }
 
         selectFormItem.find('select').change(function () {
+          // When switching resources, reserved values are different. Remove the
+          // old Event objects to prevent overlap.
+          var allEvents = calendar.getEvents();
+          for (let i = 0; i < allEvents.length; i++) {
+            console.log(allEvents[i].classNames);
+            if (allEvents[i].classNames.indexOf('current-items') > -1) {
+              allEvents[i].remove();
+            }
+          }
+          resourceTimeslotWidget.resetFieldValue(calendarId);
+          calendar.setOption('selectable', true);
+
+          // Get infos and reserved slots for currently selected resource.
           resourceId = $(this).find('option:selected').val();
           resourceTitle = $(this).find('option:selected').text();
           reserved.events = [];
           if (widgetSettings.reserved.hasOwnProperty(resourceId)) {
             reserved.events = widgetSettings.reserved[resourceId];
           }
-          // When switching resources, reserved values are different. Remove the
-          // old EventSource objects and add the current ones.
-          var current = calendar.getEventById('current-item');
-          if (current !== null) {
-            current.remove();
-            calendar.setOption('selectable', true);
+          let eventSourceLocal = calendar.getEventSourceById('reserved');
+          if (eventSourceLocal !== null) {
+            // Can this ever be null?
+            eventSourceLocal.remove();
           }
+          calendar.addEventSource(reserved);
+
+          // Update feed.
           if (widgetSettings.feedUrl !== null) {
             if (resourceId > 0) {
               feed.url = widgetSettings.feedUrl.replace('{ID}', resourceId);
@@ -173,12 +182,6 @@
               calendar.addEventSource(feed);
             }
           }
-          let eventSourceLocal = calendar.getEventSourceById('reserved');
-          if (eventSourceLocal !== null) {
-            // Can this ever be null?
-            eventSourceLocal.remove();
-          }
-          calendar.addEventSource(reserved);
         });
 
       });
@@ -194,52 +197,36 @@
    *   HTML ID of the current calendar container.
    * @param array values
    *   Array of all Fullcalendar event objects, including background events.
-   * @param bool dateonly
-   *   Whether date or date and time should be displayed.
+   * @param int maxvalues
+   *   Max available values, field granularity.
    *
    * @return int
    *   Number of current events.
    */
-  resourceTimeslotWidget.updateFieldValue = function (selector, values, dateonly) {
-    // Warning: start/end objects get the wrong UTC offset (Fullcalendar), so we
-    // have to calculate from local offset to end up with the right timezone.
-    // Special care with Safari!
-    // Function getTimezoneOffset() returns minutes, we need msec.
+  resourceTimeslotWidget.updateFieldValue = function (selector, values, maxvalues) {
     var result = [];
+    // Take special care with Safari.
+    // @see https://stackoverflow.com/questions/54726314/safari-returns-incorrect-value-for-date-toisostring
+    // It's probably broken again.
     for (let i = 0; i < values.length; i++) {
       // Filter out the current (dynamic) items.
       if (values[i].classNames.indexOf('current-items') > -1) {
-        var startUTC = new Date(values[i].start.getTime() + (values[i].start.getTimezoneOffset() * 60 * 1000));
-        var endUTC = new Date(values[i].end.getTime() + (values[i].end.getTimezoneOffset() * 60 * 1000));
         result.push({
-          start: startUTC,
-          end: endUTC
+          start: values[i].start,
+          end: values[i].end
         });
       }
     }
     var parent = $('#' + selector).parent().parent();
     parent.find('.fc-data').val(JSON.stringify(result));
 
-    /*
-    // Date and time format based on browsers locales, without seconds.
-    // @todo how to make this useful with multiple values?
-    var locale_s = startLocal.toLocaleDateString();
-    var locale_e = endLocal.toLocaleDateString();
-    if (dateonly === false) {
-      if (locale_s === locale_e) {
-        // If start and end date are the same, only print it once.
-        locale_e = endLocal.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-      }
-      else {
-        locale_e += ' ' + endLocal.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-      }
-      locale_s += ' ' + startLocal.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-    }
-
-    // Show some text as not the complete datetime range may be visible.
-    var info = Backdrop.t('You selected @start to @end', { '@start': locale_s, '@end': locale_e });
+    // Display info about remaining slots.
+    var avail = maxvalues - result.length;
+    var info = Backdrop.t('@selected slot(s) selected, @avail available.', {
+      '@selected': result.length,
+      '@avail': (maxvalues - result.length)
+    });
     parent.find('.start-end-display').text(info);
-    */
 
     // Allow different styling, if a slot is selected.
     if (result.length > 0) {
@@ -251,14 +238,16 @@
     return result.length;
   };
 
-  // @todo this isn't used anymore.
+  /**
+   * Empty the hidden input value and related data.
+   *
+   * @param string selector
+   *   CSS selector calendar ID.
+   */
   resourceTimeslotWidget.resetFieldValue = function (selector) {
     var parent = $('#' + selector).parent().parent();
-    parent.find('.fullcalendar-input .fc-start').val('');
-    parent.find('.fullcalendar-input .fc-end').val('');
-    //parent.find('.fc-data').val('');
+    parent.find('.fc-data').val('');
     parent.find('.start-end-display').text('');
-
     parent.removeClass('slot-selected');
   };
 
