@@ -149,7 +149,6 @@
           // old Event objects to prevent overlap.
           var allEvents = calendar.getEvents();
           for (let i = 0; i < allEvents.length; i++) {
-            console.log(allEvents[i].classNames);
             if (allEvents[i].classNames.indexOf('current-items') > -1) {
               allEvents[i].remove();
             }
