@@ -16,14 +16,18 @@
         var resourceId = selectFormItem.find('option:selected').val();
         var resourceTitle = selectFormItem.find('option:selected').text();
         var reserved = { id: 'reserved', events: [] };
-        var fcData = $(this).parent('.form-item').next('.fc-data').val();
-        var currentItems = JSON.parse(fcData);
         var fieldName = $(this).attr('data-fieldname');
         var widgetSettings = settings.resource_timeslots_setup[fieldName];
         var maxValues = Number(widgetSettings.maxValues);
         var validRange = widgetSettings.validRange;
         if (widgetSettings.reserved.hasOwnProperty(resourceId)) {
           reserved.events = widgetSettings.reserved[resourceId];
+        }
+        var fcData = $(this).parent('.form-item').next('.fc-data').val();
+        var currentItems = [];
+        // Catch empty value after form validation failures.
+        if (fcData !== '') {
+          currentItems = JSON.parse(fcData);
         }
 
         var options = {

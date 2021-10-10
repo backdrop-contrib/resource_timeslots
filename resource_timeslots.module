@@ -308,7 +308,7 @@ function resource_timeslots_field_validate($entity_type, $entity, $field, $insta
   }
   foreach ($items as $delta => $item) {
     if ($instance['required']) {
-      if (empty($item['resource_id']) || empty($item['data'])) {
+      if (empty($item['resource_id']) || empty($item['data']) || $item['data'] == '[]') {
         $errors[$field['field_name']][$langcode][$delta][] = array(
           'error' => 'resource_timeslot_empty',
           'message' => t('!name field is required.', array(
