@@ -280,10 +280,9 @@ function resource_timeslots_field_widget_form(&$form, &$form_state, $field, $ins
       }
       else {
         foreach ($items as $delta => $item) {
-          // Add dates parsable by js.
-          // @todo Tricky timezone shifts in some browsers...
-          $values[$delta]['start'] = format_date($items[$delta]['start'], 'custom', 'Y-m-d H:i:s');
-          $values[$delta]['end'] = format_date($items[$delta]['end'], 'custom', 'Y-m-d H:i:s');
+          // Add dates parsable by js, using timestamp integers (msec).
+          $values[$delta]['start'] = $items[$delta]['start'] * 1000;
+          $values[$delta]['end'] = $items[$delta]['end'] * 1000;
         }
         $encoded = json_encode($values);
       }
@@ -345,13 +344,11 @@ function resource_timeslots_field_presave($entity_type, $entity, $field, $instan
   // One item contains all data we need.
   $data = json_decode($items[0]['data']);
   foreach ($data as $item) {
-    $start = new DateTime($item->start);
-    $end = new DateTime($item->end);
-    if (is_object($start) && is_object($end)) {
+    if (is_numeric($item->start) && is_numeric($item->end)) {
       $items_processed[] = array(
         'resource_id' => $items[0]['resource_id'],
-        'start' => $start->format('U'),
-        'end' => $end->format('U'),
+        'start' => $item->start / 1000,
+        'end' => $item->end / 1000,
       );
     }
   }

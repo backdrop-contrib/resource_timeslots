@@ -208,15 +208,13 @@
    */
   resourceTimeslotWidget.updateFieldValue = function (selector, values, maxvalues) {
     var result = [];
-    // Take special care with Safari.
-    // @see https://stackoverflow.com/questions/54726314/safari-returns-incorrect-value-for-date-toisostring
-    // It's probably broken again.
+    // Using timestamps (msec) seems more reliable across browsers.
     for (let i = 0; i < values.length; i++) {
       // Filter out the current (dynamic) items.
       if (values[i].classNames.indexOf('current-items') > -1) {
         result.push({
-          start: values[i].start,
-          end: values[i].end
+          start: values[i].start.getTime(),
+          end: values[i].end.getTime()
         });
       }
     }
