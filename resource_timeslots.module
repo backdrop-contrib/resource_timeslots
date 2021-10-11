@@ -326,7 +326,7 @@ function resource_timeslots_field_validate($entity_type, $entity, $field, $insta
     }
     if (!empty($item['data']) && $item['data'] != '[]' && json_decode($item['data']) == NULL) {
       $errors[$field['field_name']][$langcode][$delta][] = array(
-        'error' => 'resource_timeslot_invalid_end',
+        'error' => 'resource_timeslot_invalid_data',
         'message' => t('Invalid data'),
       );
     }
@@ -351,6 +351,12 @@ function resource_timeslots_field_presave($entity_type, $entity, $field, $instan
         'end' => $item->end / 1000,
       );
     }
+  }
+  if (!empty($items_processed)) {
+    // Sort by start timestamp before inserting into db.
+    usort($items_processed, function($a, $b) {
+      return $a['start'] - $b['start'];
+    });
   }
   $items = $items_processed;
 }

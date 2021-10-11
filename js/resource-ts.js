@@ -124,13 +124,13 @@
           var rangeStart = new Date(options.validRange.start);
           if (rangeStart.getTime() > currentItems[0].start.getTime()) {
             var pastRange = {
-              start: currentItems[0].start.toUTCString(),
+              start: currentItems[0].start,
               end: widgetSettings.validRange.end
             };
             calendar.setOption('validRange', pastRange);
           }
           // Go to the first existing slot.
-          calendar.gotoDate(slot.start);
+          calendar.gotoDate(currentItems[0].start);
         }
         calendar.render();
 
