@@ -51,12 +51,47 @@ function theme_resource_timeslot_list($variables) {
   $node = node_load($item['resource_id']);
   if ($node) {
     $name = node_type_get_name($node);
-    $output .= '<li class="resource"><span class="label">' . $name . '</span>: ' . check_plain($node->title) . '</li> ';
+    $output .= '<li class="resource"><span class="label">' . check_plain($name) . '</span>: ' . check_plain($node->title) . '</li> ';
   }
   $output .= '<li><span class="label">' . t('Start') . '</span>: ' . format_date($item['start']) . '</li>';
   $output .= '<li><span class="label">' . t('End') . '</span>: ' . format_date($item['end']) . '</li>';
 
   $output .= '</ul>';
+
+  return $output;
+}
+
+/**
+ * Returns a table.
+ */
+function theme_resource_timeslot_table($variables) {
+  $header = array(
+    t('Resource'),
+    t('From'),
+    t('To'),
+  );
+  $rows = array();
+
+  if (!empty($variables['items']) && !empty($variables['items'][0]['resource_id'])) {
+    $items = $variables['items'];
+    $node = node_load($items[0]['resource_id']);
+    $name = node_type_get_name($node);
+    $header[0] = check_plain($name);
+    $title = check_plain($node->title);
+    foreach ($items as $item) {
+      $rows[] = array(
+        $title,
+        format_date($item['start']),
+        format_date($item['end']),
+      );
+    }
+  }
+  $data = array(
+    'header' => $header,
+    'rows' => $rows,
+    'attributes' => array('class' => array('timeslot-results')),
+  );
+  $output = theme('table', $data);
 
   return $output;
 }

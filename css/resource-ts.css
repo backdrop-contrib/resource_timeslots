@@ -52,3 +52,9 @@ html.js .noscript-hint {
 .form-item-fc-slot.form-error {
   outline: 2px solid #f00;
 }
+/* Prevent ugly Seven table hover effect */
+.fc-scrollgrid tr:hover,
+.fc-scrollgrid tr:hover td.active,
+.fc-scrollgrid tr.odd:hover td.active {
+  background: inherit;
+}

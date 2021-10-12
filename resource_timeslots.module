@@ -48,7 +48,7 @@ function resource_timeslots_field_instance_settings_form($field, $instance) {
  * Implements hook_field_is_empty().
  */
 function resource_timeslots_field_is_empty($item, $field) {
-  if (empty($item['start']) || empty($item['end']) || empty($item['resource_id'])) {
+  if (empty($item['resource_id']) || empty($item['data']) || $item['data'] == '[]') {
     return TRUE;
   }
 
@@ -70,6 +70,9 @@ function resource_timeslots_field_widget_info() {
         'max_future_months' => 3,
         'min_avail_delay_days' => 1,
         'additional_reserved_url' => NULL,
+      ),
+      'behaviors' => array(
+        'multiple values' => FIELD_BEHAVIOR_CUSTOM,
       ),
     ),
   );
@@ -180,10 +183,10 @@ function resource_timeslots_field_widget_form(&$form, &$form_state, $field, $ins
       $valid_range = _resource_timeslots_valid_range($widget_settings['min_avail_delay_days'], $widget_settings['max_future_months']);
       $js_settings = array(
         'reserved' => $reserved,
+        'maxValues' => ($field['cardinality'] == FIELD_CARDINALITY_UNLIMITED) ? 100 : $field['cardinality'],
         'minSlotSize' => $widget_settings['min_slot_size'],
         'firstDay' => config_get('system.date', 'first_day'),
         'validRange' => $valid_range,
-        'timezone' => backdrop_get_user_timezone(),
         'langCode' => $language->langcode,
         'feedUrl' => $widget_settings['additional_reserved_url'],
       );
@@ -238,7 +241,11 @@ function resource_timeslots_field_widget_form(&$form, &$form_state, $field, $ins
           $title = t('Select @nodetype', array('@nodetype' => $node_type->name));
         }
       }
-      $element['resource_id'] = array(
+      $element['resource_timeslot'] = array(
+        '#type' => 'container',
+        '#title' => 'test',
+      );
+      $element['resource_timeslot']['resource_id'] = array(
         '#type' => 'select',
         '#title' => $title,
         '#options' => $resource_options,
@@ -249,13 +256,13 @@ function resource_timeslots_field_widget_form(&$form, &$form_state, $field, $ins
       $markup = '<div id="' . $item_id . '" data-fieldname="' . $field['field_name'] . '" class="dt-range-fullcal"></div>';
       $markup .= '<div class="start-end-display"></div>';
       $markup .= '<p class="noscript-hint">' . t('Javascript is required to use this form.') . '</p>';
-      $element['fullcalendar'] = array(
+      $element['resource_timeslot']['fullcalendar'] = array(
         '#type' => 'item',
         '#markup' => $markup,
         '#title' => t('Time slot'),
         '#states' => array(
           'visible' => array(
-            ':input[name="' . $field['field_name'] . '[und][' . $delta . '][resource_id]"]' => array('!value' => '0'),
+            ':input[name="' . $field['field_name'] . '[und][resource_timeslot][resource_id]"]' => array('!value' => '0'),
           ),
         ),
         '#required' => $instance['required'],
@@ -264,17 +271,25 @@ function resource_timeslots_field_widget_form(&$form, &$form_state, $field, $ins
       if (!empty($instance['description'])) {
         $element['fullcalendar']['#description'] = $instance['description'];
       }
-      $element['start'] = array(
+      // @todo callback?
+      $values = array();
+      $encoded = '[]';
+      if (isset($items[0]) && array_key_exists('data', $items[0])) {
+        // Back from preview, re-use already parsed data from tempstore.
+        $encoded = $items[0]['data'];
+      }
+      else {
+        foreach ($items as $delta => $item) {
+          // Add dates parsable by js, using timestamp integers (msec).
+          $values[$delta]['start'] = $items[$delta]['start'] * 1000;
+          $values[$delta]['end'] = $items[$delta]['end'] * 1000;
+        }
+        $encoded = json_encode($values);
+      }
+      $element['resource_timeslot']['data'] = array(
         '#type' => 'hidden',
-        '#default_value' => isset($items[$delta]['start']) ? $items[$delta]['start'] : '',
-        '#prefix' => '<div class="fullcalendar-input">',
-        '#attributes' => array('class' => array('fc-start')),
-      );
-      $element['end'] = array(
-        '#type' => 'hidden',
-        '#default_value' => isset($items[$delta]['end']) ? $items[$delta]['end'] : '',
-        '#suffix' => '</div>',
-        '#attributes' => array('class' => array('fc-end')),
+        '#default_value' => $encoded,
+        '#attributes' => array('class' => array('fc-data')),
       );
 
       break;
@@ -292,7 +307,7 @@ function resource_timeslots_field_validate($entity_type, $entity, $field, $insta
   }
   foreach ($items as $delta => $item) {
     if ($instance['required']) {
-      if (empty($item['resource_id']) || empty($item['start']) || empty($item['end'])) {
+      if (empty($item['resource_id']) || empty($item['data']) || $item['data'] == '[]') {
         $errors[$field['field_name']][$langcode][$delta][] = array(
           'error' => 'resource_timeslot_empty',
           'message' => t('!name field is required.', array(
@@ -301,37 +316,49 @@ function resource_timeslots_field_validate($entity_type, $entity, $field, $insta
         );
       }
     }
-    // Following three checks are for sanity. Values get set via select or js,
-    // but if they're invalid, they cause exceptions when saving to integer
-    // columns in the database.
+    // Following two checks are for sanity, as values get set via select or js
+    // and should always pass.
     if (!empty($item['resource_id']) && (int) $item['resource_id'] === 0) {
       $errors[$field['field_name']][$langcode][$delta][] = array(
         'error' => 'resource_timeslot_invalid_nid',
         'message' => t('Invalid resource value'),
       );
     }
-    if (!empty($item['start']) && (int) $item['start'] === 0) {
+    if (!empty($item['data']) && $item['data'] != '[]' && json_decode($item['data']) == NULL) {
       $errors[$field['field_name']][$langcode][$delta][] = array(
-        'error' => 'resource_timeslot_invalid_start',
-        'message' => t('Invalid start date'),
+        'error' => 'resource_timeslot_invalid_data',
+        'message' => t('Invalid data'),
       );
-    }
-    if (!empty($item['end']) && (int) $item['end'] === 0) {
-      $errors[$field['field_name']][$langcode][$delta][] = array(
-        'error' => 'resource_timeslot_invalid_end',
-        'message' => t('Invalid end date'),
-      );
-    }
-    // No problem with db, but start after end makes no sense.
-    if (!empty($item['start']) && !empty($item['end'])) {
-      if ($item['start'] >= $item['end']) {
-        $errors[$field['field_name']][$langcode][$delta][] = array(
-          'error' => 'resource_timeslot_invalid_range',
-          'message' => t('Invalid date range'),
-        );
-      }
     }
   }
+}
+
+/**
+ * Implements hook_field_presave().
+ */
+function resource_timeslots_field_presave($entity_type, $entity, $field, $instance, $langcode, &$items) {
+  $items_processed = array();
+  if (empty($items)) {
+    return $items_processed;
+  }
+  // One item contains all data we need.
+  $data = json_decode($items[0]['data']);
+  foreach ($data as $item) {
+    if (is_numeric($item->start) && is_numeric($item->end)) {
+      $items_processed[] = array(
+        'resource_id' => $items[0]['resource_id'],
+        'start' => $item->start / 1000,
+        'end' => $item->end / 1000,
+      );
+    }
+  }
+  if (!empty($items_processed)) {
+    // Sort by start timestamp before inserting into db.
+    usort($items_processed, function($a, $b) {
+      return $a['start'] - $b['start'];
+    });
+  }
+  $items = $items_processed;
 }
 
 /**
@@ -345,6 +372,10 @@ function resource_timeslots_field_formatter_info() {
     ),
     'resource_timeslot_list' => array(
       'label' => t('List'),
+      'field types' => array('resource_timeslot'),
+    ),
+    'resource_timeslot_table' => array(
+      'label' => t('Table'),
       'field types' => array('resource_timeslot'),
     ),
   );
@@ -365,6 +396,11 @@ function resource_timeslots_theme($existing, $type, $theme, $path) {
       'path' => $path,
       'render element' => 'element',
     ),
+    'resource_timeslot_table' => array(
+      'file' => 'resource_timeslots.theme.inc',
+      'path' => $path,
+      'render element' => 'element',
+    ),
   );
 
   return $themes;
@@ -375,6 +411,19 @@ function resource_timeslots_theme($existing, $type, $theme, $path) {
  */
 function resource_timeslots_field_formatter_view($object_type, $object, $field, $instance, $langcode, $items, $display) {
   $element = array();
+  if (empty($items)) {
+    return $element;
+  }
+  if (array_key_exists('data', $items[0])) {
+    $message = t('Field %label does not support dynamic previews.', array(
+      '%label' => $instance['label'],
+    ));
+    $element[0] = array(
+      '#type' => 'markup',
+      '#markup' => '<p>' . $message . '</p>',
+    );
+    return $element;
+  }
   switch ($display['type']) {
     case 'resource_timeslot_text':
       foreach ($items as $delta => $item) {
@@ -388,6 +437,14 @@ function resource_timeslots_field_formatter_view($object_type, $object, $field, 
         $markup = theme('resource_timeslot_list', array('item' => $item));
         $element[$delta] = array('#markup' => $markup);
       }
+      break;
+
+    case 'resource_timeslot_table':
+      $markup = theme('resource_timeslot_table', array('items' => $items));
+      $element[0] = array(
+        '#type' => 'markup',
+        '#markup' => $markup,
+      );
       break;
 
   }
@@ -439,20 +496,6 @@ function resource_timeslots_library_info() {
     'css' => array($path . '/main.min.css' => array()),
   );
   return $libraries;
-}
-
-/**
- * Implements hook_form_FORM_ID_alter().
- */
-function resource_timeslots_form_field_ui_field_edit_form_alter(&$form, &$form_state) {
-  // We have to enforce single value to prevent several problems.
-  if ($form['#field']['type'] == 'resource_timeslot') {
-    $form['field']['cardinality_container']['cardinality']['#options'] = array(
-      'number' => t('Limited'),
-    );
-    $form['field']['cardinality_container']['cardinality_number']['#max'] = 1;
-    $form['field']['cardinality_container']['#description'] = t('This field type does not support multiple values.');
-  }
 }
 
 /**
