@@ -27,6 +27,9 @@ You need two content types (node types), one acts as resource the other one acts
 The reservation type gets a "Resource timeslot" field attached, in which you
  set the "Resource content type" to your resource type.
 
+Limit the number of slots people may add per node and field with the field's
+ granularity setting (Global settings -> Number of values).
+
 If you want to preselect resources via links for new reservations, add a
  `resource-id=7` parameter to the url (href), where `7` is the node ID of the
  resource node.
@@ -40,7 +43,6 @@ Bugs and Feature requests should be reported in the [Issue Queue](https://github
 
 ## Known issues
 
-- Does not work with multiple field values.
 - Does not work with node translations (multilingual resource nodes).
 - The widget's slot delete button does not work on touch devices under certain
  circumstances.
