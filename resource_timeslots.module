@@ -268,9 +268,9 @@ function resource_timeslots_field_widget_form(&$form, &$form_state, $field, $ins
         '#required' => $instance['required'],
         '#wrapper_attributes' => array('class' => array('form-item-fc-slot')),
       );
-      if (!empty($instance['description'])) {
-        // Caution, seems like we have to take care of sanitizing the help text!
-        $element['resource_timeslot']['fullcalendar']['#description'] = field_filter_xss($instance['description']);
+      if (!empty($element['#description'])) {
+        // Copy help text to the appropriate place.
+        $element['resource_timeslot']['fullcalendar']['#description'] = $element['#description'];
       }
       // @todo callback?
       $values = array();
