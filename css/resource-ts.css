@@ -45,12 +45,11 @@
   background-color: #aebbc8;
   border-color: #aebbc8;
 }
-/* Odd FF default setting prevents noscript tags? */
-html.js .noscript-hint {
-  display: none;
-}
 .form-item-fc-slot.form-error {
   outline: 2px solid #f00;
+}
+table.fc-scrollgrid {
+  margin: 0;
 }
 /* Prevent ugly Seven table hover effect */
 .fc-scrollgrid tr:hover,

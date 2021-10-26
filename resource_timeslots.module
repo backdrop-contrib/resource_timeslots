@@ -181,9 +181,10 @@ function resource_timeslots_field_widget_form(&$form, &$form_state, $field, $ins
       }
       $reserved = _resource_timeslots_get_reserved($field['field_name'], $dateonly, $skip_item);
       $valid_range = _resource_timeslots_valid_range($widget_settings['min_avail_delay_days'], $widget_settings['max_future_months']);
+      $limit = ($field['cardinality'] == FIELD_CARDINALITY_UNLIMITED) ? 100 : $field['cardinality'];
       $js_settings = array(
         'reserved' => $reserved,
-        'maxValues' => ($field['cardinality'] == FIELD_CARDINALITY_UNLIMITED) ? 100 : $field['cardinality'],
+        'maxValues' => $limit,
         'minSlotSize' => $widget_settings['min_slot_size'],
         'firstDay' => config_get('system.date', 'first_day'),
         'validRange' => $valid_range,
@@ -254,8 +255,12 @@ function resource_timeslots_field_widget_form(&$form, &$form_state, $field, $ins
         '#empty_value' => '0',
       );
       $markup = '<div id="' . $item_id . '" data-fieldname="' . $field['field_name'] . '" class="dt-range-fullcal"></div>';
-      $markup .= '<div class="start-end-display"></div>';
-      $markup .= '<p class="noscript-hint">' . t('Javascript is required to use this form.') . '</p>';
+      $info = t('@selected slot(s) selected, @avail available.', array(
+        '@selected' => count($items),
+        '@avail' => $limit - count($items),
+      ));
+      $markup .= '<details><summary>' . $info . '</summary><p></p></details>';
+      $markup .= '<p class="noscript-hint js-hide">' . t('Javascript is required to use this form.') . '</p>';
       $element['resource_timeslot']['fullcalendar'] = array(
         '#type' => 'item',
         '#markup' => $markup,
