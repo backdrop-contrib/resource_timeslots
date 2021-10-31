@@ -255,7 +255,7 @@ function resource_timeslots_field_widget_form(&$form, &$form_state, $field, $ins
         '#empty_value' => '0',
       );
       $markup = '<div id="' . $item_id . '" data-fieldname="' . $field['field_name'] . '" class="dt-range-fullcal"></div>';
-      $info = t('@selected slot(s) selected, @avail available.', array(
+      $info = t('@selected slot(s) selected, @avail remaining.', array(
         '@selected' => count($items),
         '@avail' => $limit - count($items),
       ));

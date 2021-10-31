@@ -313,7 +313,7 @@
    *   Number of remaining slots, based on field cardinality.
    */
   resourceTimeslotWidget.updateSummary = function (selector, selectedCount, availableCount) {
-    var info = Backdrop.t('@selected slot(s) selected, @avail available.', {
+    var info = Backdrop.t('@selected slot(s) selected, @avail remaining.', {
       '@selected': selectedCount,
       '@avail': availableCount
     });
