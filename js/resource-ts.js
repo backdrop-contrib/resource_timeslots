@@ -57,17 +57,17 @@
               end: info.endStr,
               classNames: ['current-items']
             });
-            let count = resourceTimeslotWidget.updateFieldValue(calendarId, calendar.getEvents(), maxValues);
+            let count = resourceTimeslotWidget.updateFieldValue(calendarId, calendar.getEvents(), widgetSettings);
             // Consider field cardinality.
             if (count >= maxValues) {
               calendar.setOption('selectable', false);
             }
           },
           eventResize: function(info) {
-            resourceTimeslotWidget.updateFieldValue(calendarId, calendar.getEvents(), maxValues);
+            resourceTimeslotWidget.updateFieldValue(calendarId, calendar.getEvents(), widgetSettings);
           },
           eventDrop: function(info) {
-            resourceTimeslotWidget.updateFieldValue(calendarId, calendar.getEvents(), maxValues);
+            resourceTimeslotWidget.updateFieldValue(calendarId, calendar.getEvents(), widgetSettings);
           },
           eventContent: function(arg) {
             if (arg.event._def.ui.display === 'background') {
@@ -81,7 +81,7 @@
           eventClick: function(info) {
             if (info.jsEvent.srcElement.className === 'remove-btn') {
               info.event.remove();
-              let count = resourceTimeslotWidget.updateFieldValue(calendarId, calendar.getEvents(), maxValues);
+              let count = resourceTimeslotWidget.updateFieldValue(calendarId, calendar.getEvents(), widgetSettings);
               if (count < maxValues) {
                 calendar.setOption('selectable', true);
               }
@@ -108,6 +108,7 @@
         }
 
         if (currentItems.length) {
+          var existingDates = [];
           for (let i = 0; i < currentItems.length; i++) {
             var slot = {
               start: new Date(currentItems[i].start),
@@ -115,8 +116,16 @@
               classNames: ['current-items']
             }
             currentItems[i] = slot;
+            existingDates[i] = {
+              start: currentItems[i].start.getTime(),
+              end: currentItems[i].end.getTime()
+            }
             calendar.addEvent(slot);
           }
+          resourceTimeslotWidget.renderDates($(this).parent().find('details p'), existingDates, widgetSettings);
+          // Needed when php is not up-to-date with selected values.
+          let summary = $(this).parent().find('details summary');
+          resourceTimeslotWidget.updateSummary(summary, existingDates.length, (maxValues - existingDates.length));
           if (currentItems.length >= maxValues) {
             calendar.setOption('selectable', false);
           }
@@ -157,7 +166,7 @@
               allEvents[i].remove();
             }
           }
-          resourceTimeslotWidget.resetFieldValue(calendarId);
+          resourceTimeslotWidget.resetFieldValue(calendarId, widgetSettings);
           calendar.setOption('selectable', true);
 
           // Get infos and reserved slots for currently selected resource.
@@ -200,14 +209,15 @@
    *   HTML ID of the current calendar container.
    * @param array values
    *   Array of all Fullcalendar event objects, including background events.
-   * @param int maxvalues
-   *   Max available values, field granularity.
+   * @param array settings
+   *   This field's widget settings.
    *
    * @return int
    *   Number of current events.
    */
-  resourceTimeslotWidget.updateFieldValue = function (selector, values, maxvalues) {
+  resourceTimeslotWidget.updateFieldValue = function (selector, values, settings) {
     var result = [];
+    var maxvalues = Number(settings.maxValues);
     // Using timestamps (msec) seems more reliable across browsers.
     for (let i = 0; i < values.length; i++) {
       // Filter out the current (dynamic) items.
@@ -223,11 +233,9 @@
 
     // Display info about remaining slots.
     var avail = maxvalues - result.length;
-    var info = Backdrop.t('@selected slot(s) selected, @avail available.', {
-      '@selected': result.length,
-      '@avail': (maxvalues - result.length)
-    });
-    parent.find('.start-end-display').text(info);
+    var summary = parent.find('details summary');
+    resourceTimeslotWidget.updateSummary(summary, result.length, avail);
+    resourceTimeslotWidget.renderDates(parent.find('details p'), result, settings);
 
     // Allow different styling, if a slot is selected.
     if (result.length > 0) {
@@ -245,11 +253,71 @@
    * @param string selector
    *   CSS selector calendar ID.
    */
-  resourceTimeslotWidget.resetFieldValue = function (selector) {
+  resourceTimeslotWidget.resetFieldValue = function (selector, settings) {
     var parent = $('#' + selector).parent().parent();
+    var summary = parent.find('details summary');
     parent.find('.fc-data').val('');
-    parent.find('.start-end-display').text('');
+    resourceTimeslotWidget.updateSummary(summary, '0', settings.maxValues);
+    parent.find('details p').text('');
     parent.removeClass('slot-selected');
   };
+
+  /**
+   * Render selected dates in the details element.
+   *
+   * @param oject selector
+   *   Jquery object to append content to.
+   * @param array dates
+   *   Array of objects, keyed by start and end.
+   * @param object settings
+   *   Widget settings.
+   */
+  resourceTimeslotWidget.renderDates = function (selector, dates, settings) {
+    var dateonly = false;
+    if (settings.calendarType === 'dayGridMonth') {
+      dateonly = true;
+    }
+    selector.text('');
+
+    if (dates.length) {
+      for (let i = 0; i < dates.length; i++) {
+        var startDate = new Date(dates[i].start);
+        var endDate = new Date(dates[i].end);
+        // Date and time format based on browsers locales, without seconds.
+        var locale_s = new Date(startDate).toLocaleDateString();
+        var locale_e = new Date(endDate).toLocaleDateString();
+        if (dateonly === false) {
+          if (locale_s === locale_e) {
+            // If start and end date are the same, only print it once.
+            locale_e = endDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+          }
+          else {
+            locale_e += ' ' + endDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+          }
+          locale_s += ' ' + startDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }
+        var output = locale_s + ' - ' + locale_e + '<br>';
+        selector.append(output);
+      }
+    }
+  }
+
+  /**
+   * Update the displayed info about available slots.
+   *
+   * @param object selector
+   *   Jquery object to update the text.
+   * @param int selectedCound
+   *   Number of already selected slots.
+   * @param int availableCount
+   *   Number of remaining slots, based on field cardinality.
+   */
+  resourceTimeslotWidget.updateSummary = function (selector, selectedCount, availableCount) {
+    var info = Backdrop.t('@selected slot(s) selected, @avail remaining.', {
+      '@selected': selectedCount,
+      '@avail': availableCount
+    });
+    selector.text(info);
+  }
 
 })(jQuery);
