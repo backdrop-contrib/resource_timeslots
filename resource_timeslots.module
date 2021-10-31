@@ -494,7 +494,7 @@ function resource_timeslots_library_info() {
   $libraries['fullcalendar'] = array(
     'title' => 'Fullcalendar recent',
     'website' => 'https://fullcalendar.io',
-    'version' => '5.9.0',
+    'version' => '5.10.0',
     'js' => array(
       $path . '/main.min.js' => array(),
       $path . '/locales-all.min.js' => array(),
