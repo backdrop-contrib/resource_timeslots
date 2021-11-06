@@ -17,7 +17,8 @@ If you have resources that can only be used once at a time, like rooms, cars,
 
 ## Installation
 
-Install this module using the official Backdrop CMS [instructions](https://backdropcms.org/guide/modules)
+Install this module using the official Backdrop CMS
+ [instructions](https://docs.backdropcms.org/documentation/extend-with-modules)
 
 ## Setup
 
