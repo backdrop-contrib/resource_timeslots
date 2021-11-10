@@ -29,7 +29,7 @@ The reservation type gets a "Resource timeslot" field attached, in which you
  set the "Resource content type" to your resource type.
 
 Limit the number of slots people may add per node and field with the field's
- granularity setting (Global settings -> Number of values).
+ cardinality setting (Global settings -> Number of values).
 
 If you want to preselect resources via links for new reservations, add a
  `resource-id=7` parameter to the url (href), where `7` is the node ID of the
