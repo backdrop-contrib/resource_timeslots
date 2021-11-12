@@ -682,7 +682,6 @@ function _resource_timeslots_get_langcode() {
   if ($default_country == 'GB' && $langcode = 'en') {
     return 'en-gb';
   }
-  else {
-    return $langcode;
-  }
+
+  return $langcode;
 }
