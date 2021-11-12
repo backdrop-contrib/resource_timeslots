@@ -679,7 +679,7 @@ function _resource_timeslots_get_langcode() {
   $default_country = config_get('system.date', 'default_country');
 
   // Otherwise people in UK get the wrong date/month order in calendar headers.
-  if ($default_country == 'GB' && $langcode = 'en') {
+  if ($default_country == 'GB' && $langcode == 'en') {
     return 'en-gb';
   }
 
