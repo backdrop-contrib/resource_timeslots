@@ -64,6 +64,7 @@ function resource_timeslots_field_widget_info() {
       'label' => t('Timeslot Fullcalendar'),
       'field types' => array('resource_timeslot'),
       'settings' => array(
+        'default_resource' => NULL,
         'min_slot_size' => '01:00',
         'business_hours_constrain' => FALSE,
         'business_hours' => array(),
@@ -73,6 +74,7 @@ function resource_timeslots_field_widget_info() {
       ),
       'behaviors' => array(
         'multiple values' => FIELD_BEHAVIOR_CUSTOM,
+        'default value' => FIELD_BEHAVIOR_NONE,
       ),
     ),
   );
@@ -87,6 +89,22 @@ function resource_timeslots_field_widget_settings_form($field, $instance) {
 
   if ($widget['type'] == 'resource_timeslot_fc') {
     $form = array();
+    // A bit problematic: resource type is part of the same form.
+    $resource_options = array();
+    if (!empty($instance['settings']['resource_node_type'])) {
+      $type = $instance['settings']['resource_node_type'];
+      $resource_options = _resource_timeslots_get_node_options($type);
+    }
+    $form['default_resource'] = array(
+      '#type' => 'select',
+      '#title' => t('Default resource'),
+      '#options' => $resource_options,
+      '#default_value' => $settings['default_resource'],
+      '#empty_option' => t('None'),
+    );
+    if (empty($instance['settings']['resource_node_type'])) {
+      $form['default_resource']['#description'] = t('This setting will be available after the Resource content type has been set.');
+    }
     $slot_options = array(
       '00:30' => t('30 min'),
       '01:00' => t('1 hour'),
@@ -225,10 +243,16 @@ function resource_timeslots_field_widget_form(&$form, &$form_state, $field, $ins
       // @todo Consider autocomplete if too many nodes?
       $type = $instance['settings']['resource_node_type'];
       $resource_options = _resource_timeslots_get_node_options($type);
-      $params = backdrop_get_query_parameters();
       $resource_id = isset($items[$delta]['resource_id']) ? $items[$delta]['resource_id'] : '0';
+      if (empty($items[$delta]['resource_id']) && !empty($widget_settings['default_resource'])) {
+        if (array_key_exists($widget_settings['default_resource'], $resource_options)) {
+          $resource_id = $widget_settings['default_resource'];
+        }
+      }
+      $params = backdrop_get_query_parameters();
       $args = arg();
-      // New nodes can take the $_GET parameter as resource id.
+      // New nodes can take the $_GET parameter as resource id, which also
+      // overrides the widget default value setting above.
       if (count($args) > 2 && $args[0] == 'node' && $args[1] == 'add' && !empty($params['resource-id'])) {
         if (array_key_exists($params['resource-id'], $resource_options)) {
           // Sanitize by casting to int.

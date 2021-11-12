@@ -27,3 +27,21 @@ function resource_timeslots_field_schema($field) {
   );
   return array('columns' => $db_columns);
 }
+
+/**
+ * Clean up field default settings.
+ */
+function resource_timeslots_update_1000() {
+  $instances = config_get_names_with_prefix('field.instance.node');
+  foreach ($instances as $name) {
+    $config = config($name);
+    if ($config->get('widget.type') != 'resource_timeslot_fc') {
+      continue;
+    }
+    // Default value handling has been dropped, wipe out settings if any.
+    if (!empty($config->get('default_value'))) {
+      $config->clear('default_value');
+      $config->save();
+    }
+  }
+}
