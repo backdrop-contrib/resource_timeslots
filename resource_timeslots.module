@@ -189,7 +189,6 @@ function resource_timeslots_field_widget_settings_form($field, $instance) {
 function resource_timeslots_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
   switch ($instance['widget']['type']) {
     case 'resource_timeslot_fc':
-      global $language;
       $widget_settings = $instance['widget']['settings'];
       $dateonly = ($widget_settings['min_slot_size'] == '24:00') ? TRUE : FALSE;
       $skip_item = NULL;
@@ -206,7 +205,7 @@ function resource_timeslots_field_widget_form(&$form, &$form_state, $field, $ins
         'minSlotSize' => $widget_settings['min_slot_size'],
         'firstDay' => config_get('system.date', 'first_day'),
         'validRange' => $valid_range,
-        'langCode' => $language->langcode,
+        'langCode' => _resource_timeslots_get_langcode(),
         'feedUrl' => $widget_settings['additional_reserved_url'],
       );
       // Business hours control visibility and availability.
@@ -667,4 +666,23 @@ function _resource_timeslots_map_day_options($map_array = NULL) {
   }
 
   return FALSE;
+}
+
+/**
+ * Helper function to return the langcode.
+ *
+ * @see https://github.com/backdrop-contrib/resource_timeslots/issues/8
+ */
+function _resource_timeslots_get_langcode() {
+  global $language;
+  $langcode = $language->langcode;
+  $default_country = config_get('system.date', 'default_country');
+
+  // Otherwise people in UK get the wrong date/month order in calendar headers.
+  if ($default_country == 'GB' && $langcode = 'en') {
+    return 'en-gb';
+  }
+  else {
+    return $langcode;
+  }
 }
