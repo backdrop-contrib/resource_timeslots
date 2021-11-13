@@ -57,3 +57,12 @@ table.fc-scrollgrid {
 .fc-scrollgrid tr.odd:hover td.active {
   background: inherit;
 }
+@media (max-width: 480px) {
+  .fc .fc-toolbar-title {
+    font-size: 1.4rem;
+  }
+  .fc .fc-col-header-cell-cushion,
+  .fc .fc-timegrid-slot-label-cushion {
+    font-size: .9rem;
+  }
+}
