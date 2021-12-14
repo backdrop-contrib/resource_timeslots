@@ -8,6 +8,11 @@
   text-indent: -200px;
   position: relative;
 }
+/* Otherwise delete via tap breaks. */
+.fc-event-selected:before,
+.fc-event:focus:before {
+  z-index: auto;
+}
 .fc-event .remove-btn::before {
   content: "";
   display: block;
