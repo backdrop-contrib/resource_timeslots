@@ -8,6 +8,7 @@ Provides Token and Views support for individual field subvalues.
 
 Wraps [Fullcalendar 5.x](https://fullcalendar.io) as a reusable library.
 
+![Widget screenshot](https://raw.githubusercontent.com/backdrop-contrib/resource_timeslots/1.x-1.x/screenshots/resource-timeslot-widget.png)
 
 ## Use cases
 
