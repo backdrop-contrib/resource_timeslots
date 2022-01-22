@@ -39,6 +39,10 @@ If you want to preselect resources via links for new reservations, add a
 If you want to show special messages after submission, or send mails, use
  the [Rules](https://backdropcms.org/project/rules) module.
 
+## Documentation
+
+Additional documentation is located in the [Wiki](https://github.com/backdrop-contrib/resource_timeslots/wiki).
+
 ## Issues
 
 Bugs and Feature requests should be reported in the [Issue Queue](https://github.com/backdrop-contrib/resource_timeslots/issues)
