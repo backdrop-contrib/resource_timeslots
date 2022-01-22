@@ -28,3 +28,37 @@ function MYMODULE_form_FORM_ID_alter(&$form, &$form_state, $form_id) {
     ),
   );
 }
+
+/**
+ * Alter the list of available resources in the node form select list.
+ *
+ * The following example replaces the whole array with values from a custom
+ * view, but you could also just filter out nodes by ID from the existing list.
+ * For instance with an "unset($nodes[123])".
+ *
+ * @param array $nodes
+ *   Array of node titles keyed by node id (nid).
+ *
+ * @code
+ *   // Example:
+ *   $nodes = array(
+ *     23 => 'A node title',
+ *     34 => 'Another title',
+ *   );
+ * @endcode
+ *
+ * @see _resource_timeslots_get_node_options()
+ */
+function HOOK_resource_timeslots_node_options_alter(&$nodes) {
+  // Load a custom view and execute.
+  $view = views_get_view('my_custom_view');
+  if ($view) {
+    $custom_options = array();
+    $view->execute();
+    $result = $view->result;
+    foreach ($result as $object) {
+      $custom_options[$object->nid] = $object->node_title;
+    }
+    $nodes = $custom_options;
+  }
+}
