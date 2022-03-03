@@ -61,7 +61,7 @@ Bugs and Feature requests should be reported in the [Issue Queue](https://github
 
 ## Credits
 
-Utilizes the MIT licensed [Fullcalendar library](https://github.com/fullcalendar/fullcalendar) to input time slots.
+Utilizes the MIT licensed [FullCalendar](https://github.com/fullcalendar/fullcalendar) to input time slots.
 
 ## License
 
