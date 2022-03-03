@@ -4,3 +4,5 @@ type = module
 backdrop = 1.x
 package = Fields
 tags[] = Fields
+
+dependencies[] = fullcalendar_lib

@@ -6,8 +6,6 @@ Provides a field type to reserve timeslots for configurable resources and the
 
 Provides Token and Views support for individual field subvalues.
 
-Wraps [Fullcalendar 5.x](https://fullcalendar.io) as a reusable library.
-
 ![Widget screenshot](https://raw.githubusercontent.com/backdrop-contrib/resource_timeslots/1.x-1.x/screenshots/resource-timeslot-widget.png)
 
 ## Use cases
@@ -20,6 +18,10 @@ If you have resources that can only be used once at a time, like rooms, cars,
 
 Install this module using the official Backdrop CMS
  [instructions](https://docs.backdropcms.org/documentation/extend-with-modules)
+
+## Dependencies
+
+- [Fullcalendar Library](https://backdropcms.org/project/fullcalendar_lib)
 
 ## Setup
 

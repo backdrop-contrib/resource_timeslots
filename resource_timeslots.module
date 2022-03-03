@@ -234,7 +234,7 @@ function resource_timeslots_field_widget_form(&$form, &$form_state, $field, $ins
           ),
         ),
       );
-      $element['#attached']['library'][] = array('resource_timeslots', 'fullcalendar');
+      $element['#attached']['library'][] = array('fullcalendar_lib', 'fullcalendar');
       $element['#attached']['js'][] = backdrop_get_path('module', 'resource_timeslots') . '/js/resource-ts.js';
       $element['#attached']['css'][] = backdrop_get_path('module', 'resource_timeslots') . '/css/resource-ts.css';
 
@@ -507,24 +507,6 @@ function resource_timeslots_field_views_data_views_data_alter(&$data, $field) {
       'help' => 'Related resource nodes',
     );
   }
-}
-
-/**
- * Implements hook_library_info().
- */
-function resource_timeslots_library_info() {
-  $path = backdrop_get_path('module', 'resource_timeslots') . '/libraries/fullcalendar/lib';
-  $libraries['fullcalendar'] = array(
-    'title' => 'Fullcalendar recent',
-    'website' => 'https://fullcalendar.io',
-    'version' => '5.10.1',
-    'js' => array(
-      $path . '/main.min.js' => array(),
-      $path . '/locales-all.min.js' => array(),
-    ),
-    'css' => array($path . '/main.min.css' => array()),
-  );
-  return $libraries;
 }
 
 /**
