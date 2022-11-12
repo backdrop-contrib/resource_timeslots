@@ -370,6 +370,12 @@ function resource_timeslots_field_presave($entity_type, $entity, $field, $instan
   if (empty($items)) {
     return $items_processed;
   }
+
+  // Already processed, like in VBO.
+  if (!isset($items[0]['data'])) {
+    return;
+  }
+
   // One item contains all data we need.
   $data = json_decode($items[0]['data']);
   foreach ($data as $item) {
