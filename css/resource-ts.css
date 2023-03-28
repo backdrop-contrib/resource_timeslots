@@ -43,7 +43,7 @@
 .fc-event .event-text {
   clear: both;
 }
-.fc .fc-bg-event {
+.form-item-fc-slot .fc .fc-bg-event {
   background-color: #ffcccc;
 }
 .fc .fc-event-past {
