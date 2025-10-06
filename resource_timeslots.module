@@ -512,6 +512,9 @@ function resource_timeslots_field_views_data_views_data_alter(&$data, $field) {
       'label' => 'Resource node',
       'help' => 'Related resource nodes',
     );
+    // Views table click sorting.
+    $data[$data_table_name][$field_name . '_start']['field']['click sortable'] = TRUE;
+    $data[$data_table_name][$field_name . '_end']['field']['click sortable'] = TRUE;
   }
 }
 
